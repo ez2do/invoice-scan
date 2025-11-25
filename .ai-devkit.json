@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "environment": "both",
+  "initializedPhases": [
+    "requirements",
+    "design",
+    "planning",
+    "implementation",
+    "testing",
+    "deployment",
+    "monitoring"
+  ],
+  "createdAt": "2025-11-25T14:17:11.728Z",
+  "updatedAt": "2025-11-25T14:17:11.767Z"
+}
