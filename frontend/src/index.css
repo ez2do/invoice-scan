@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PWA iOS fixes */
+@media (display-mode: standalone) {
+  /* Hide address bar in PWA mode */
+  html, body {
+    height: 100vh;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent viewport changes during navigation */
+  body {
+    position: fixed;
+    width: 100%;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+  
+  /* Override body position for scrollable content */
+  #root {
+    position: relative;
+    height: 100vh;
+    overflow: auto;
+  }
+}
+
+@layer base {
+  html {
+    height: 100%;
+  }
+  
+  body {
+    height: 100%;
+    background-color: white;
+    color: #111827;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+  
+  #root {
+    height: 100%;
+  }
+}
+
+@layer components {
+  .camera-viewfinder {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+  }
+  
+  .camera-frame {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 0.5rem;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  }
+  
+  .invoice-preview {
+    max-height: 24rem;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mobile specific styles */
+@media (max-width: 640px) {
+  .mobile-optimized {
+    font-size: 0.875rem;
+  }
+}

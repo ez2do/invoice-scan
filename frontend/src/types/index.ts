@@ -1,0 +1,70 @@
+// Invoice Data Types
+export interface KeyValuePair {
+  key: string;
+  value: string;
+  confidence?: number;
+}
+
+export interface TableData {
+  headers: string[];
+  rows: string[][];
+}
+
+export interface InvoiceData {
+  keyValuePairs: KeyValuePair[];
+  table: TableData | null;
+  summary: KeyValuePair[];
+  confidence?: number;
+}
+
+// API Types
+export interface ExtractRequest {
+  image: string; // base64 encoded
+}
+
+export interface ExtractResponse {
+  success: boolean;
+  data?: InvoiceData;
+  error?: string;
+  processingTime?: number;
+}
+
+// App State Types
+export interface AppState {
+  currentImage: string | null;
+  extractedData: InvoiceData | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Camera Types
+export interface CameraConfig {
+  video: {
+    facingMode: 'environment' | 'user';
+    width: { ideal: number };
+    height: { ideal: number };
+  };
+}
+
+// UI Component Types
+export interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: 'button' | 'submit';
+  className?: string;
+}
+
+export interface InputProps {
+  label?: string;
+  error?: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  type?: 'text' | 'number' | 'email';
+  required?: boolean;
+  className?: string;
+}

@@ -133,4 +133,6 @@ docker-compose.override.yml
 *.bak
 *.backup
 *.old
-
+frontend/ssl/
+.claude
+.opencode
