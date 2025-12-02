@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Invoice Review &amp; Extract</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#137fec",
+            "background-light": "#f6f7f8",
+            "background-dark": "#101922",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative mx-auto flex h-screen max-h-[960px] w-full max-w-[480px] flex-col overflow-hidden bg-background-dark group/design-root">
+<header class="relative z-10 flex items-center justify-between p-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-full text-white">
+<span class="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
+</button>
+<h1 class="text-lg font-semibold text-white">Review Invoice</h1>
+<div class="h-10 w-10"></div>
+</header>
+<main class="flex flex-grow flex-col items-center justify-center px-6 pb-4 pt-2">
+<p class="mb-4 text-center text-base font-normal text-gray-300">Is the invoice clear and all details readable?</p>
+<div class="w-full overflow-hidden rounded-xl">
+<img alt="A captured image of an invoice for review." class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBljMZ3JbGa-QR2XVawPwGOwsYZVcNaa40iuOUTsPwI_kk4tcDZIM1cSXtbHDQ6UlkVC-wnY0rbho4NpYn1-hvHJZyWWX-KWvM0SO5T4j82ichw0wEdLQXAGVgB3oOpXTDvqOkBOydXNC_zglqFZk7q1Nsatt9PA5L9NdQtqk31t2uw92jCemgR3zAH6kqAUlTJKIB5ZuqXfJH5nt33yEMAFRMuQ2jkl5oq3u55Iv9ZGwgmEvDKDjm19d09xW6M8QbZFe4knMwnq3_c"/>
+</div>
+</main>
+<footer class="z-10 bg-background-dark p-6">
+<div class="flex items-center space-x-4">
+<button class="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-white/50 bg-white/10 text-base font-semibold text-white transition-colors hover:bg-white/20">
+<span class="material-symbols-outlined">restart_alt</span>
+          Retake
+        </button>
+<button class="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-white transition-colors hover:bg-primary/90">
+<span class="material-symbols-outlined">document_scanner</span>
+          Extract Data
+        </button>
+</div>
+</footer>
+</div>
+</body></html>
