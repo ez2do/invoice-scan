@@ -36,6 +36,7 @@ func main() {
 	corsConfig.AllowOrigins = []string{cfg.CORSOrigin}
 	corsConfig.AllowMethods = []string{"GET", "POST", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	corsConfig.AllowCredentials = false
 	router.Use(cors.New(corsConfig))
 
 	extractionService, err := services.NewExtractionService(cfg.GeminiAPIKey)

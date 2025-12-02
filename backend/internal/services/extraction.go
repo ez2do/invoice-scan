@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -32,20 +31,32 @@ func NewExtractionService(apiKey string) (*ExtractionService, error) {
 	return &ExtractionService{
 		client:  client,
 		apiKey:  apiKey,
-		timeout: 30 * time.Second,
+		timeout: 90 * time.Second,
 	}, nil
 }
 
 func (s *ExtractionService) Close() {
 }
 
-func (s *ExtractionService) Extract(ctx context.Context, base64Image string) (*models.InvoiceData, error) {
+func (s *ExtractionService) Extract(ctx context.Context, imageBytes []byte, mimeType string) (*models.InvoiceData, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
-	imageBytes, mimeType, err := decodeBase64Image(base64Image)
-	if err != nil {
-		return nil, fmt.Errorf("invalid image: %w", err)
+	const maxSize = 10 * 1024 * 1024
+	if len(imageBytes) > maxSize {
+		return nil, fmt.Errorf("image too large (max 10MB)")
+	}
+
+	if len(imageBytes) == 0 {
+		return nil, fmt.Errorf("empty image data")
+	}
+
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+
+	if !strings.HasPrefix(mimeType, "image/") {
+		return nil, fmt.Errorf("invalid image type: %s", mimeType)
 	}
 
 	prompt := buildExtractionPrompt()
@@ -59,9 +70,9 @@ func (s *ExtractionService) Extract(ctx context.Context, base64Image string) (*m
 		{Parts: parts},
 	}
 
-	result, err := s.client.Models.GenerateContent(ctx, "gemini-2.0-flash-exp", contents, nil)
+	result, err := s.client.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Gemini API error: %w", err)
+		return nil, fmt.Errorf("gemini API error: %w", err)
 	}
 
 	if result == nil || len(result.Candidates) == 0 {
@@ -79,41 +90,6 @@ func (s *ExtractionService) Extract(ctx context.Context, base64Image string) (*m
 	}
 
 	return invoiceData, nil
-}
-
-func decodeBase64Image(base64Str string) ([]byte, string, error) {
-	const maxSize = 10 * 1024 * 1024
-
-	if len(base64Str) > maxSize {
-		return nil, "", fmt.Errorf("image too large")
-	}
-
-	var imageData string
-	var mimeType string
-
-	if strings.HasPrefix(base64Str, "data:image/") {
-		parts := strings.SplitN(base64Str, ",", 2)
-		if len(parts) != 2 {
-			return nil, "", fmt.Errorf("invalid data URL format")
-		}
-		mimePart := strings.TrimSuffix(parts[0], ";base64")
-		mimeType = strings.TrimPrefix(mimePart, "data:")
-		imageData = parts[1]
-	} else {
-		imageData = base64Str
-		mimeType = "image/jpeg"
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(imageData)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid base64 encoding: %w", err)
-	}
-
-	if len(decoded) == 0 {
-		return nil, "", fmt.Errorf("empty image data")
-	}
-
-	return decoded, mimeType, nil
 }
 
 func buildExtractionPrompt() string {

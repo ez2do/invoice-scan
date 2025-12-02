@@ -50,11 +50,14 @@ Health check endpoint.
 ### POST `/api/extract`
 Extract invoice data from invoice image using Gemini Vision API.
 
-**Request**:
-```json
-{
-  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
-}
+**Request**: Multipart form data
+- `image` (file): Invoice image file (JPEG, PNG, etc.)
+- Max file size: 10MB
+
+**cURL Example**:
+```bash
+curl -X POST http://localhost:3001/api/extract \
+  -F "image=@invoice.jpg"
 ```
 
 **Response (Success)**:

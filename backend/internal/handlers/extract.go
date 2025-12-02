@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -24,27 +25,68 @@ func NewExtractHandler(extractionService *services.ExtractionService) *ExtractHa
 func (h *ExtractHandler) Extract(c *gin.Context) {
 	startTime := time.Now()
 
-	var req models.ExtractRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	file, err := c.FormFile("image")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ExtractResponse{
 			Success: false,
-			Error:   "Invalid request: " + err.Error(),
+			Error:   "Image file is required: " + err.Error(),
 		})
 		return
 	}
 
-	if req.Image == "" {
+	if file.Size == 0 {
 		c.JSON(http.StatusBadRequest, models.ExtractResponse{
 			Success: false,
-			Error:   "Image field is required",
+			Error:   "Image file is empty",
 		})
 		return
 	}
 
-	invoiceData, err := h.extractionService.Extract(c.Request.Context(), req.Image)
+	const maxSize = 10 * 1024 * 1024
+	if file.Size > maxSize {
+		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+			Success: false,
+			Error:   "Image file too large (max 10MB)",
+		})
+		return
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+			Success: false,
+			Error:   "Failed to open image file: " + err.Error(),
+		})
+		return
+	}
+	defer src.Close()
+
+	imageBytes, err := io.ReadAll(src)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+			Success: false,
+			Error:   "Failed to read image file: " + err.Error(),
+		})
+		return
+	}
+
+	if len(imageBytes) == 0 {
+		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+			Success: false,
+			Error:   "Image file is empty",
+		})
+		return
+	}
+
+	mimeType := file.Header.Get("Content-Type")
+	if mimeType == "" {
+		mimeType = http.DetectContentType(imageBytes)
+	}
+
+	invoiceData, err := h.extractionService.Extract(c.Request.Context(), imageBytes, mimeType)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
-		if strings.Contains(err.Error(), "Gemini API") {
+		if strings.Contains(err.Error(), "gemini API") || strings.Contains(err.Error(), "Gemini API") {
 			statusCode = http.StatusBadGateway
 		} else if strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "context deadline exceeded") {
 			statusCode = http.StatusGatewayTimeout

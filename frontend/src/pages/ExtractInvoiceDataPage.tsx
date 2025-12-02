@@ -44,7 +44,7 @@ export default function ExtractInvoiceDataPage() {
 
     if (!extractedData && !isLoading) {
       setLoading(true);
-      extractMutation.mutate({ image: currentImage });
+      extractMutation.mutate(currentImage);
     }
   }, [currentImage, extractedData, isLoading]);
 
