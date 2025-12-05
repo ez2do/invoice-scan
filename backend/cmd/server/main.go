@@ -10,36 +10,46 @@ import (
 	"syscall"
 	"time"
 
-	"invoice-scan/backend/internal/config"
+	"invoice-scan/backend/internal/adapters/repo"
 	"invoice-scan/backend/internal/handlers"
 	"invoice-scan/backend/internal/services"
+	"invoice-scan/backend/pkg/config"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+	geminiAPIKey := config.GetStringWithDefaultValue("gemini.api_key", "")
+	if geminiAPIKey == "" {
+		log.Fatal("gemini.api_key environment variable is required")
 	}
 
-	if cfg.GeminiAPIKey == "" {
-		log.Fatal("GEMINI_API_KEY environment variable is required")
+	dsn := getDSN()
+	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	invoiceRepo := repo.NewInvoiceGormRepo(gormDB)
+	_ = invoiceRepo
 
 	router := gin.Default()
 
 	router.Use(gin.Recovery())
 
+	corsOrigin := config.GetStringWithDefaultValue("cors.origin", "http://localhost:5173")
+
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{cfg.CORSOrigin}
+	corsConfig.AllowOrigins = []string{corsOrigin}
 	corsConfig.AllowMethods = []string{"GET", "POST", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
 	corsConfig.AllowCredentials = false
 	router.Use(cors.New(corsConfig))
 
-	extractionService, err := services.NewExtractionService(cfg.GeminiAPIKey)
+	extractionService, err := services.NewExtractionService(geminiAPIKey)
 	if err != nil {
 		log.Fatalf("Failed to create extraction service: %v", err)
 	}
@@ -53,7 +63,10 @@ func main() {
 		api.POST("/extract", extractHandler.Extract)
 	}
 
-	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	host := config.GetStringWithDefaultValue("server.host", "localhost")
+	port := config.GetStringWithDefaultValue("server.port", "3001")
+
+	addr := fmt.Sprintf("%s:%s", host, port)
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: router,
@@ -80,6 +93,17 @@ func main() {
 	}
 
 	log.Println("Server exited")
+}
+
+func getDSN() string {
+	dbUser := config.GetStringWithDefaultValue("database.user", "root")
+	dbPassword := config.GetStringWithDefaultValue("database.password", "")
+	dbHost := config.GetStringWithDefaultValue("database.host", "localhost")
+	dbPort := config.GetStringWithDefaultValue("database.port", "3306")
+	dbName := config.GetStringWithDefaultValue("database.name", "invoice_scan")
+
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		dbUser, dbPassword, dbHost, dbPort, dbName)
 }
 
 func healthHandler(c *gin.Context) {

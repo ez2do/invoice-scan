@@ -137,3 +137,5 @@ frontend/ssl/
 .claude
 .opencode
 ck_cheatsheet.md
+
+*/server/config.yaml

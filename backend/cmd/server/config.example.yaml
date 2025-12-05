@@ -1,0 +1,16 @@
+server:
+  host: localhost
+  port: "3001"
+
+gemini:
+  api_key: ""
+
+cors:
+  origin: "http://localhost:5173"
+
+database:
+  host: localhost
+  port: "3306"
+  user: root
+  password: ""
+  name: invoice_scan
