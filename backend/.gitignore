@@ -16,3 +16,4 @@ vendor/
 *.swo
 *~
 */server/config.yaml
+server

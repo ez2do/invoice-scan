@@ -7,5 +7,5 @@ type Repository interface {
 	Create(ctx context.Context, invoice *Invoice) error
 	GetByID(ctx context.Context, id ID) (*Invoice, error)
 	List(ctx context.Context) (Invoices, error)
-	Update(ctx context.Context, invoice *Invoice) error
+	Update(ctx context.Context, invoice *Invoice, updateFunc func(*Invoice) error) error
 }

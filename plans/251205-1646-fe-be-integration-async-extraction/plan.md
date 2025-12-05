@@ -26,8 +26,8 @@ Integrate frontend with backend, implement MySQL/GORM persistence, file storage 
 | Phase | Name | Status | Progress |
 |-------|------|--------|----------|
 | 01 | [Backend Database Setup](./phase-01-backend-database-setup.md) | Completed | 100% |
-| 02 | [Backend File Storage](./phase-02-backend-file-storage.md) | Pending | 0% |
-| 03 | [Backend Async API](./phase-03-backend-async-api.md) | Pending | 0% |
+| 02 | [Backend File Storage](./phase-02-backend-file-storage.md) | Completed | 100% |
+| 03 | [Backend Async API](./phase-03-backend-async-api.md) | Completed | 100% |
 | 04 | [Frontend Integration](./phase-04-frontend-integration.md) | Pending | 0% |
 | 05 | [Testing & Polish](./phase-05-testing-polish.md) | Pending | 0% |
 

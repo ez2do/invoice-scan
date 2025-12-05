@@ -1,6 +1,6 @@
 # Codebase Summary
 
-**Last Updated**: 2025-01-26
+**Last Updated**: 2025-12-06
 **Version**: 1.0.0
 **Repository**: invoice-scan
 
@@ -360,11 +360,35 @@ npm run preview
 - Input sanitization
 - XSS prevention
 
+## Backend Configuration
+
+### Configuration Management
+**Location**: `backend/pkg/config/`
+**Technology**: Viper with YAML and environment variable support
+
+**Configuration Structure** (`backend/pkg/config/config.yaml`):
+- Server settings (host, port)
+- Gemini API key
+- CORS origin
+- Database connection (host, port, user, password, name)
+
+**Environment Variable Support**:
+- Automatic mapping from dot notation to env vars (e.g., `server.port` → `SERVER_PORT`)
+- Supports both YAML config file and environment variables
+- Environment variables take precedence over YAML values
+
+**Usage Pattern**:
+```go
+host := config.GetStringWithDefaultValue("server.host", "localhost")
+port := config.GetStringWithDefaultValue("server.port", "3001")
+geminiAPIKey := config.GetStringWithDefaultValue("gemini.api_key", "")
+```
+
 ## Known Limitations
 
 ### Current Limitations
-- Backend API not yet implemented
-- No data persistence
+- Backend API partially implemented (extraction endpoint working)
+- Database persistence implemented but not fully integrated
 - No user authentication
 - No error tracking service
 - No analytics integration

@@ -7,8 +7,8 @@ import (
 	"github.com/pelletier/go-toml"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v2"
+	"invoice-scan/backend/pkg/log"
 	"io"
-	"scan-dead-links/pkg/log"
 )
 
 type Localize struct {

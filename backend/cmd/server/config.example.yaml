@@ -14,3 +14,7 @@ database:
   user: root
   password: ""
   name: invoice_scan
+
+storage:
+  upload_path: "./uploads"
+  base_url: "http://localhost:3001"

@@ -139,3 +139,4 @@ frontend/ssl/
 ck_cheatsheet.md
 
 */server/config.yaml
+backend/server

@@ -1,6 +1,6 @@
 # System Architecture
 
-**Last Updated**: 2025-01-26
+**Last Updated**: 2025-12-06
 **Version**: 1.0.0
 **Project**: Invoice Scan MVP
 
@@ -127,12 +127,16 @@ Invoice Scan MVP implements a client-server architecture with a React Progressiv
 - Response parsing
 
 #### 2.3 Configuration Management
-**Location**: `backend/internal/config/` (planned)
+**Location**: `backend/pkg/config/`
+**Technology**: Viper with YAML and environment variable support
 **Responsibilities**:
-- Environment variable loading
-- API key management
+- Environment variable loading (automatic with dot-to-underscore mapping)
+- YAML configuration file support (`config.yaml`)
+- API key management (Gemini API key)
+- Server configuration (host, port)
 - CORS configuration
-- Logging setup
+- Database configuration (host, port, user, password, name)
+- Configuration access via dot notation (e.g., `config.GetStringWithDefaultValue("server.port", "3001")`)
 
 ### 3. External Services
 

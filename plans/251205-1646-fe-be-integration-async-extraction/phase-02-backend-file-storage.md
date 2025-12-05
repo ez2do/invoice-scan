@@ -2,7 +2,7 @@
 
 **Parent Plan**: [plan.md](./plan.md)  
 **Dependencies**: Phase 01  
-**Status**: Pending  
+**Status**: Completed  
 **Priority**: High
 
 ## Overview
@@ -183,12 +183,12 @@ if err != nil {
 
 ## Success Criteria
 
-- [ ] FileStorage interface in domain layer (no infrastructure deps)
-- [ ] LocalStorage implementation in adapters layer
-- [ ] Can save image file via storage interface
-- [ ] Can retrieve image via HTTP request
-- [ ] File paths stored in database correctly
-- [ ] Interface is swappable to S3
+- [x] FileStorage interface in domain layer (no infrastructure deps)
+- [x] LocalStorage implementation in adapters layer
+- [x] Can save image file via storage interface
+- [x] Can retrieve image via HTTP request
+- [x] File paths stored in database correctly
+- [x] Interface is swappable to S3
 
 ## Future S3 Implementation Stub
 

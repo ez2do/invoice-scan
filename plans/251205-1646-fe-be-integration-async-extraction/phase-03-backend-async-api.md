@@ -2,7 +2,7 @@
 
 **Parent Plan**: [plan.md](./plan.md)  
 **Dependencies**: Phase 01, Phase 02  
-**Status**: Pending  
+**Status**: Completed  
 **Priority**: High
 
 ## Overview
@@ -216,10 +216,10 @@ api.GET("/invoices/:id", invoiceHandler.GetByID)
 
 ## Success Criteria
 
-- [ ] Upload returns within 100ms (no extraction wait)
-- [ ] Status transitions: pending → processing → completed/failed
-- [ ] List endpoint returns all invoices with correct status
-- [ ] GetByID returns full extracted data for completed invoices
+- [x] Upload returns within 100ms (no extraction wait)
+- [x] Status transitions: pending → processing → completed/failed
+- [x] List endpoint returns all invoices with correct status
+- [x] GetByID returns full extracted data for completed invoices
 
 ## Risk Assessment
 

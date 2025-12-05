@@ -1,4 +1,4 @@
-package services
+package extraction
 
 import (
 	"context"
@@ -7,18 +7,18 @@ import (
 	"strings"
 	"time"
 
-	"invoice-scan/backend/internal/models"
+	"invoice-scan/backend/internal/domain/invoice"
 
 	"google.golang.org/genai"
 )
 
-type ExtractionService struct {
+type GeminiExtraction struct {
 	client  *genai.Client
 	apiKey  string
 	timeout time.Duration
 }
 
-func NewExtractionService(apiKey string) (*ExtractionService, error) {
+func NewGeminiExtraction(apiKey string) (*GeminiExtraction, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey:  apiKey,
@@ -28,27 +28,28 @@ func NewExtractionService(apiKey string) (*ExtractionService, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	return &ExtractionService{
+	return &GeminiExtraction{
 		client:  client,
 		apiKey:  apiKey,
 		timeout: 90 * time.Second,
 	}, nil
 }
 
-func (s *ExtractionService) Close() {
+func (s *GeminiExtraction) Close() error {
+	return nil
 }
 
-func (s *ExtractionService) Extract(ctx context.Context, imageBytes []byte, mimeType string) (*models.InvoiceData, error) {
+func (s *GeminiExtraction) Extract(ctx context.Context, imageBytes []byte, mimeType string) (invoice.ExtractedData, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
 	const maxSize = 10 * 1024 * 1024
 	if len(imageBytes) > maxSize {
-		return nil, fmt.Errorf("image too large (max 10MB)")
+		return invoice.ExtractedData{}, fmt.Errorf("image too large (max 10MB)")
 	}
 
 	if len(imageBytes) == 0 {
-		return nil, fmt.Errorf("empty image data")
+		return invoice.ExtractedData{}, fmt.Errorf("empty image data")
 	}
 
 	if mimeType == "" {
@@ -56,7 +57,7 @@ func (s *ExtractionService) Extract(ctx context.Context, imageBytes []byte, mime
 	}
 
 	if !strings.HasPrefix(mimeType, "image/") {
-		return nil, fmt.Errorf("invalid image type: %s", mimeType)
+		return invoice.ExtractedData{}, fmt.Errorf("invalid image type: %s", mimeType)
 	}
 
 	prompt := buildExtractionPrompt()
@@ -72,24 +73,24 @@ func (s *ExtractionService) Extract(ctx context.Context, imageBytes []byte, mime
 
 	result, err := s.client.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, nil)
 	if err != nil {
-		return nil, fmt.Errorf("gemini API error: %w", err)
+		return invoice.ExtractedData{}, fmt.Errorf("gemini API error: %w", err)
 	}
 
 	if result == nil || len(result.Candidates) == 0 {
-		return nil, fmt.Errorf("empty response from Gemini API")
+		return invoice.ExtractedData{}, fmt.Errorf("empty response from Gemini API")
 	}
 
 	text := result.Text()
 	if text == "" {
-		return nil, fmt.Errorf("empty text in Gemini response")
+		return invoice.ExtractedData{}, fmt.Errorf("empty text in Gemini response")
 	}
 
 	invoiceData, err := parseGeminiResponse(text)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+		return invoice.ExtractedData{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	return invoiceData, nil
+	return *invoiceData, nil
 }
 
 func buildExtractionPrompt() string {
@@ -127,7 +128,7 @@ Rules:
 - Extract dates, amounts, and numbers accurately`
 }
 
-func parseGeminiResponse(text string) (*models.InvoiceData, error) {
+func parseGeminiResponse(text string) (*invoice.ExtractedData, error) {
 	text = strings.TrimSpace(text)
 
 	text = strings.TrimPrefix(text, "```json")
@@ -135,10 +136,10 @@ func parseGeminiResponse(text string) (*models.InvoiceData, error) {
 	text = strings.TrimSuffix(text, "```")
 	text = strings.TrimSpace(text)
 
-	var invoiceData models.InvoiceData
-	if err := json.Unmarshal([]byte(text), &invoiceData); err != nil {
+	var extractedData invoice.ExtractedData
+	if err := json.Unmarshal([]byte(text), &extractedData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
-	return &invoiceData, nil
+	return &extractedData, nil
 }

@@ -73,3 +73,21 @@ func (i *Invoice) MarkFailed(errMsg string) {
 	i.ErrorMessage = &errMsg
 	i.UpdatedAt = time.Now()
 }
+
+type KeyValuePair struct {
+	Key        string   `json:"key"`
+	Value      string   `json:"value"`
+	Confidence *float64 `json:"confidence,omitempty"`
+}
+
+type TableData struct {
+	Headers []string   `json:"headers"`
+	Rows    [][]string `json:"rows"`
+}
+
+type ExtractedData struct {
+	KeyValuePairs []KeyValuePair `json:"keyValuePairs"`
+	Table         *TableData     `json:"table,omitempty"`
+	Summary       []KeyValuePair `json:"summary"`
+	Confidence    *float64       `json:"confidence,omitempty"`
+}

@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"invoice-scan/backend/internal/adapters/repo"
+	adapterstorage "invoice-scan/backend/internal/adapters/storage"
 	"invoice-scan/backend/internal/handlers"
-	"invoice-scan/backend/internal/services"
 	"invoice-scan/backend/pkg/config"
+	pkgextraction "invoice-scan/backend/pkg/extraction"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -34,7 +35,14 @@ func main() {
 	}
 
 	invoiceRepo := repo.NewInvoiceGormRepo(gormDB)
-	_ = invoiceRepo
+
+	uploadPath := config.GetStringWithDefaultValue("storage.upload_path", "./uploads")
+	baseURL := config.GetStringWithDefaultValue("storage.base_url", "http://localhost:3001")
+
+	fileStorage, err := adapterstorage.NewLocalStorage(uploadPath, baseURL)
+	if err != nil {
+		log.Fatalf("Failed to create file storage: %v", err)
+	}
 
 	router := gin.Default()
 
@@ -49,18 +57,28 @@ func main() {
 	corsConfig.AllowCredentials = false
 	router.Use(cors.New(corsConfig))
 
-	extractionService, err := services.NewExtractionService(geminiAPIKey)
+	router.Static("/uploads", uploadPath)
+
+	extractionService, err := pkgextraction.NewGeminiExtraction(geminiAPIKey)
 	if err != nil {
 		log.Fatalf("Failed to create extraction service: %v", err)
 	}
-	defer extractionService.Close()
+	defer func() {
+		if err := extractionService.Close(); err != nil {
+			log.Printf("Error closing extraction service: %v", err)
+		}
+	}()
 
 	extractHandler := handlers.NewExtractHandler(extractionService)
+	invoiceHandler := handlers.NewInvoiceHandler(invoiceRepo, fileStorage, extractionService)
 
 	api := router.Group("/api")
 	{
 		api.GET("/health", healthHandler)
 		api.POST("/extract", extractHandler.Extract)
+		api.POST("/invoices/upload", invoiceHandler.Upload)
+		api.GET("/invoices", invoiceHandler.List)
+		api.GET("/invoices/:id", invoiceHandler.GetByID)
 	}
 
 	host := config.GetStringWithDefaultValue("server.host", "localhost")

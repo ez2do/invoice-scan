@@ -6,17 +6,23 @@ import (
 	"strings"
 	"time"
 
-	"invoice-scan/backend/internal/models"
-	"invoice-scan/backend/internal/services"
+	"invoice-scan/backend/internal/domain/invoice"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ExtractHandler struct {
-	extractionService *services.ExtractionService
+type ExtractResponse struct {
+	Success        bool                   `json:"success"`
+	Data           *invoice.ExtractedData `json:"data,omitempty"`
+	Error          string                 `json:"error,omitempty"`
+	ProcessingTime *int64                 `json:"processingTime,omitempty"`
 }
 
-func NewExtractHandler(extractionService *services.ExtractionService) *ExtractHandler {
+type ExtractHandler struct {
+	extractionService invoice.ExtractionService
+}
+
+func NewExtractHandler(extractionService invoice.ExtractionService) *ExtractHandler {
 	return &ExtractHandler{
 		extractionService: extractionService,
 	}
@@ -27,7 +33,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Image file is required: " + err.Error(),
 		})
@@ -35,7 +41,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 	}
 
 	if file.Size == 0 {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Image file is empty",
 		})
@@ -44,7 +50,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 
 	const maxSize = 10 * 1024 * 1024
 	if file.Size > maxSize {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Image file too large (max 10MB)",
 		})
@@ -53,7 +59,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 
 	src, err := file.Open()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Failed to open image file: " + err.Error(),
 		})
@@ -63,7 +69,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 
 	imageBytes, err := io.ReadAll(src)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Failed to read image file: " + err.Error(),
 		})
@@ -71,7 +77,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 	}
 
 	if len(imageBytes) == 0 {
-		c.JSON(http.StatusBadRequest, models.ExtractResponse{
+		c.JSON(http.StatusBadRequest, ExtractResponse{
 			Success: false,
 			Error:   "Image file is empty",
 		})
@@ -94,7 +100,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 			statusCode = http.StatusBadRequest
 		}
 
-		c.JSON(statusCode, models.ExtractResponse{
+		c.JSON(statusCode, ExtractResponse{
 			Success: false,
 			Error:   err.Error(),
 		})
@@ -103,7 +109,7 @@ func (h *ExtractHandler) Extract(c *gin.Context) {
 
 	processingTime := time.Since(startTime).Milliseconds()
 
-	c.JSON(http.StatusOK, models.ExtractResponse{
+	c.JSON(http.StatusOK, ExtractResponse{
 		Success:        true,
 		Data:           invoiceData,
 		ProcessingTime: &processingTime,
