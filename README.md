@@ -14,9 +14,42 @@ Invoice Scan MVP enables finance and accounting staff to quickly extract structu
 
 ### Prerequisites
 
-- Node.js 18+ and npm/pnpm
+- Node.js 18+ and npm/pnpm (for local development)
+- Docker & Docker Compose (for containerized setup)
 - Modern mobile device with camera (iOS 14+ or Android 8+)
 - Google Gemini API key (for backend, when implemented)
+
+### Docker Compose Setup
+
+The project uses separate Docker Compose files for backend dependencies and frontend:
+
+**Backend Dependencies (MySQL)**:
+```bash
+cd backend/deployment
+cp env.example .env  # Edit .env to set DB_PASSWORD, etc.
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+**Frontend**:
+```bash
+cd frontend
+cp env.example .env  # Edit .env if needed
+docker-compose up -d
+```
+
+**Full Stack** (alternative):
+```bash
+# From project root
+cp docker-compose.env.example .env
+# Edit .env and set GEMINI_API_KEY
+docker-compose up -d
+```
+
+Access the application:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001/api (when running backend locally)
+
+See [DOCKER.md](./DOCKER.md) for detailed Docker setup instructions.
 
 ### Frontend Setup
 
@@ -106,6 +139,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[Codebase Summary](./docs/codebase-summary.md)**: Codebase structure, components, and technologies
 - **[Code Standards](./docs/code-standards.md)**: Coding conventions and best practices
 - **[System Architecture](./docs/system-architecture.md)**: Technical architecture and design decisions
+- **[Docker Setup](./DOCKER.md)**: Docker Compose setup and usage guide
 
 ## 🔄 Development Workflow
 

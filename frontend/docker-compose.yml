@@ -1,0 +1,23 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoice-scan-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - invoice-scan-network
+    command: npm run dev -- --host 0.0.0.0
+
+networks:
+  invoice-scan-network:
+    driver: bridge
+    external: false
+

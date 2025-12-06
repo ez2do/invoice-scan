@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: invoice-scan-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: invoice_scan
+      MYSQL_USER: invoice_user
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_PORT: 3306
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_invoice_scan_data:/var/lib/mysql
+    networks:
+      - invoice-scan-network
+
+volumes:
+  mysql_invoice_scan_data:
+
+networks:
+  invoice-scan-network:
+    driver: bridge
+
