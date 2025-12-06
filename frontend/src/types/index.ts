@@ -85,8 +85,8 @@ export interface CameraConfig {
 
 // UI Component Types
 export interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   loading?: boolean;
   disabled?: boolean;
   children: React.ReactNode;

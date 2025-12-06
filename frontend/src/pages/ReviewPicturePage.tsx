@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { ArrowLeft, RotateCcw, FileSearch, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { apiClient } from '@/lib/api';
 
@@ -18,7 +19,7 @@ export default function ReviewPicturePage() {
     },
     onError: (error: Error) => {
       setIsUploading(false);
-      alert(`Failed to upload invoice: ${error.message}`);
+      alert(`Không thể tải lên hóa đơn: ${error.message}`);
     },
   });
 
@@ -38,63 +39,69 @@ export default function ReviewPicturePage() {
   };
 
   if (!currentImage) {
-    // Redirect if no image
     navigate('/take-picture');
     return null;
   }
 
   return (
-    <div className="relative mx-auto flex h-screen max-h-[960px] w-full max-w-[480px] flex-col overflow-hidden bg-background-dark">
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-4">
-        <button 
-          className="flex h-10 w-10 items-center justify-center rounded-full text-white"
+    <div className="page-container bg-surface-950">
+      <header className="page-header bg-surface-900/80 border-surface-800/60 safe-top">
+        <button
+          className="icon-btn text-surface-400 hover:bg-surface-800"
           onClick={handleBack}
+          aria-label="Quay lại"
         >
-          <span className="text-2xl">←</span>
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-lg font-semibold text-white">Review Invoice</h1>
-        <div className="h-10 w-10"></div>
+        <h1 className="page-title text-white">Xem lại ảnh</h1>
+        <div className="w-10 h-10" />
       </header>
 
-      {/* Main Content */}
-      <main className="flex flex-grow flex-col items-center justify-center px-6 pb-4 pt-2">
-        <p className="mb-4 text-center text-base font-normal text-gray-300">
-          Is the invoice clear and all details readable?
-        </p>
-        <div className="w-full overflow-hidden rounded-xl">
-          <img 
-            alt="A captured image of an invoice for review" 
-            className="h-full w-full object-cover max-h-96" 
-            src={currentImage}
-          />
+      <main className="flex-grow flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-sm space-y-4 animate-fade-in">
+          <div className="flex items-center justify-center gap-2 text-surface-400">
+            <CheckCircle2 className="w-4 h-4 text-accent-500" />
+            <p className="text-sm font-medium">Chụp ảnh thành công</p>
+          </div>
+
+          <div className="relative rounded-2xl overflow-hidden shadow-soft-xl bg-surface-800">
+            <img
+              alt="Ảnh hóa đơn đã chụp để xem lại"
+              className="w-full h-auto object-contain max-h-[420px]"
+              src={currentImage}
+            />
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none" />
+          </div>
+
+          <p className="text-surface-500 text-center text-sm px-4">
+            Đảm bảo hóa đơn hiển thị rõ ràng và tất cả văn bản đều đọc được
+          </p>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="z-10 bg-background-dark p-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-white/50 bg-white/10 text-base font-semibold text-white transition-colors hover:bg-white/20"
+      <footer className="shrink-0 p-4 pb-6 safe-bottom bg-surface-950 border-t border-surface-800/60">
+        <div className="flex items-center gap-3 max-w-sm mx-auto">
+          <button
+            className="btn-secondary flex-1 h-14 bg-surface-800 hover:bg-surface-700 border-surface-700 text-white"
             onClick={handleRetake}
           >
-            <span className="text-xl">↻</span>
-            Retake
+            <RotateCcw className="w-5 h-5" />
+            <span>Chụp lại</span>
           </button>
-          <button 
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          <button
+            className="btn-primary flex-1 h-14"
             onClick={handleExtractData}
             disabled={isUploading}
           >
             {isUploading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>Uploading...</span>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Đang tải lên...</span>
               </>
             ) : (
               <>
-                <span className="text-xl">📄</span>
-                Extract Data
+                <FileSearch className="w-5 h-5" />
+                <span>Trích xuất dữ liệu</span>
               </>
             )}
           </button>

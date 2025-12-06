@@ -8,7 +8,7 @@ import ExtractInvoiceDataPage from '@/pages/ExtractInvoiceDataPage';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
       retry: 2,
     },
   },
@@ -18,7 +18,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router basename="/">
-        <div className="min-h-screen bg-background-light dark:bg-background-dark">
+        <div className="min-h-screen bg-surface-50 dark:bg-surface-950 font-sans text-surface-900 dark:text-surface-50">
           <Routes>
             <Route path="/" element={<Navigate to="/list-invoices" replace />} />
             <Route path="/list-invoices" element={<ListInvoicesPage />} />

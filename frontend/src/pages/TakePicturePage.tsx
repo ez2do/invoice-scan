@@ -1,20 +1,21 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { X, Zap, Camera, AlertCircle } from 'lucide-react';
 import { useCamera } from '@/hooks/useCamera';
 import { useAppStore } from '@/stores/app-store';
 
 export default function TakePicturePage() {
   const navigate = useNavigate();
-  const { 
-    videoRef, 
-    captureImage, 
-    error, 
-    isSupported, 
-    isActive, 
-    startCamera, 
-    stopCamera 
+  const {
+    videoRef,
+    captureImage,
+    error,
+    isSupported,
+    isActive,
+    startCamera,
+    stopCamera
   } = useCamera();
-  
+
   const { setCurrentImage } = useAppStore();
 
   useEffect(() => {
@@ -42,14 +43,22 @@ export default function TakePicturePage() {
 
   if (!isSupported) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center space-y-4">
-          <p className="text-white text-lg">Camera not supported</p>
-          <button 
+      <div className="fixed inset-0 bg-surface-950 flex items-center justify-center z-50">
+        <div className="text-center space-y-6 p-6 max-w-sm animate-fade-in">
+          <div className="w-16 h-16 rounded-2xl bg-error-500/20 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 text-error-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-2">Không thể truy cập camera</h2>
+            <p className="text-surface-400 text-sm">
+              Thiết bị hoặc trình duyệt này không hỗ trợ truy cập camera
+            </p>
+          </div>
+          <button
             onClick={handleClose}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
+            className="btn-primary w-full"
           >
-            Go Back
+            Quay lại
           </button>
         </div>
       </div>
@@ -58,7 +67,6 @@ export default function TakePicturePage() {
 
   return (
     <div className="fixed inset-0 bg-black z-50">
-      {/* Camera Video Background */}
       <video
         ref={videoRef}
         autoPlay
@@ -67,79 +75,69 @@ export default function TakePicturePage() {
         className="absolute inset-0 w-full h-full object-cover"
         style={{ zIndex: 1 }}
       />
-      
-      {/* Dark overlay */}
-      <div 
-        className="absolute inset-0 bg-black/20"
+
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"
         style={{ zIndex: 2 }}
       />
-      
-      {/* UI Controls */}
-      <div 
-        className="absolute inset-0 flex flex-col"
+
+      <div
+        className="absolute inset-0 flex flex-col safe-top safe-bottom"
         style={{ zIndex: 10 }}
       >
-        {/* Top Controls */}
         <div className="flex items-center justify-between p-4">
-          <button 
-            className="w-12 h-12 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+          <button
+            className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all"
             onClick={handleClose}
+            aria-label="Đóng camera"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <X className="w-5 h-5" />
           </button>
-          <button className="w-12 h-12 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"></polygon>
-            </svg>
+          <button 
+            className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all"
+            aria-label="Đèn flash"
+          >
+            <Zap className="w-5 h-5" />
           </button>
         </div>
-        
-        {/* Center Area - Frame Guide */}
-        <div className="flex-1 flex items-center justify-center px-8">
-          <div className="w-full max-w-sm aspect-[0.707] border-2 border-dashed border-white/60 rounded-lg bg-transparent"></div>
+
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-sm aspect-[0.707] relative">
+            <div className="absolute inset-0 border-2 border-white/40 rounded-2xl" />
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-white rounded-tl-xl" />
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-white rounded-tr-xl" />
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-white rounded-bl-xl" />
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-white rounded-br-xl" />
+          </div>
         </div>
-        
-        {/* Instruction Text */}
+
         <div className="px-6 pb-4">
-          <p className="text-white text-center text-base">
-            Position invoice within the frame. Ensure good lighting for best results.
+          <p className="text-white/80 text-center text-sm font-medium">
+            Đặt hóa đơn trong khung hình
           </p>
         </div>
-        
-        {/* Bottom Controls - Capture Button */}
+
         <div className="flex items-center justify-center pb-8">
-          <button 
-            className="w-20 h-20 bg-primary rounded-full border-4 border-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"
+          <button
+            className="w-[72px] h-[72px] rounded-full bg-white flex items-center justify-center shadow-soft-xl hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 disabled:hover:scale-100"
             onClick={handleCapture}
             disabled={!isActive}
+            aria-label="Chụp ảnh"
           >
-            <svg 
-              width="32" 
-              height="32" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="white" 
-              strokeWidth="2"
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-              <circle cx="12" cy="13" r="3"/>
-            </svg>
+            <div className="w-[60px] h-[60px] rounded-full bg-primary-600 flex items-center justify-center">
+              <Camera className="w-7 h-7 text-white" />
+            </div>
           </button>
         </div>
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div 
-          className="absolute top-20 left-4 right-4"
+        <div
+          className="absolute top-20 left-4 right-4 animate-fade-in"
           style={{ zIndex: 20 }}
         >
-          <div className="bg-red-500 text-white p-3 rounded-lg text-center">
+          <div className="bg-error-500/90 backdrop-blur-sm text-white p-4 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
         </div>

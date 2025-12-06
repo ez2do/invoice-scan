@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useAppStore } from '@/stores/app-store';
+import { 
+  FileText, 
+  Camera, 
+  ChevronRight, 
+  CheckCircle2, 
+  XCircle, 
+  Loader2, 
+  Clock
+} from 'lucide-react';
 import { apiClient, getImageUrl } from '@/lib/api';
 import type { InvoiceStatus } from '@/types';
 
 export default function ListInvoicesPage() {
   const navigate = useNavigate();
-  const { setSelectedInvoiceId } = useAppStore();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['invoices'],
@@ -16,162 +23,150 @@ export default function ListInvoicesPage() {
 
   const invoices = data?.data || [];
 
-  const getStatusIcon = (status: InvoiceStatus) => {
+  const getStatusConfig = (status: InvoiceStatus) => {
     switch (status) {
       case 'completed':
-        return (
-          <span className="text-base fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>
-            ✓
-          </span>
-        );
+        return {
+          icon: <CheckCircle2 className="w-4 h-4" />,
+          text: 'Hoàn thành',
+          className: 'badge-success',
+        };
       case 'failed':
-        return (
-          <span className="text-base fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>
-            ✗
-          </span>
-        );
+        return {
+          icon: <XCircle className="w-4 h-4" />,
+          text: 'Thất bại',
+          className: 'badge-error',
+        };
       case 'processing':
-        return (
-          <span className="text-base animate-spin">
-            ↻
-          </span>
-        );
+        return {
+          icon: <Loader2 className="w-4 h-4 animate-spin" />,
+          text: 'Đang xử lý',
+          className: 'badge-info',
+        };
       case 'pending':
-        return (
-          <span className="text-base animate-pulse">
-            ⏳
-          </span>
-        );
+        return {
+          icon: <Clock className="w-4 h-4" />,
+          text: 'Chờ xử lý',
+          className: 'badge-warning',
+        };
       default:
-        return null;
-    }
-  };
-
-  const getStatusText = (status: InvoiceStatus) => {
-    switch (status) {
-      case 'completed':
-        return 'Extraction Done';
-      case 'failed':
-        return 'Extraction Failed';
-      case 'processing':
-        return 'Extracting...';
-      case 'pending':
-        return 'Waiting...';
-      default:
-        return status;
-    }
-  };
-
-  const getStatusColor = (status: InvoiceStatus) => {
-    switch (status) {
-      case 'completed':
-        return 'text-status-green';
-      case 'failed':
-        return 'text-red-500';
-      case 'processing':
-        return 'text-status-blue';
-      case 'pending':
-        return 'text-gray-500';
-      default:
-        return 'text-gray-500';
+        return {
+          icon: <Clock className="w-4 h-4" />,
+          text: status,
+          className: 'badge',
+        };
     }
   };
 
   const handleInvoiceClick = (invoiceId: string) => {
-    setSelectedInvoiceId(invoiceId);
     navigate(`/extract-invoice-data/${invoiceId}`);
   };
 
   return (
-    <div className="relative mx-auto flex h-screen max-h-[960px] w-full max-w-[480px] flex-col overflow-hidden bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
-      {/* Header */}
-      <header className="flex shrink-0 items-center justify-between border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-4 py-3">
-        <button className="flex size-10 cursor-pointer items-center justify-center rounded-full">
-          <span className="material-symbols-outlined text-2xl">←</span>
-        </button>
-        <h1 className="text-lg font-semibold">Scanned Invoices</h1>
-        <button className="flex size-10 cursor-pointer items-center justify-center rounded-full">
-          <span className="material-symbols-outlined text-2xl">🔍</span>
-        </button>
+    <div className="page-container">
+      <header className="page-header safe-top flex justify-center">
+        <h1 className="page-title text-center">Hóa đơn</h1>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow overflow-y-auto p-4">
+      <main className="page-content p-4">
         {isLoading && (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="text-gray-600 dark:text-gray-300">Loading invoices...</p>
+          <div className="flex flex-col items-center justify-center h-64 animate-fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mb-4">
+              <Loader2 className="w-6 h-6 text-primary-600 dark:text-primary-400 animate-spin" />
             </div>
+            <p className="text-surface-500 dark:text-surface-400 text-sm">Đang tải hóa đơn...</p>
           </div>
         )}
 
         {error && (
-          <div className="p-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700">
-                Failed to load invoices: {error instanceof Error ? error.message : 'Unknown error'}
-              </p>
+          <div className="animate-fade-in p-4">
+            <div className="card bg-error-50 dark:bg-error-500/10 border-error-200 dark:border-error-500/20">
+              <div className="flex items-start gap-3">
+                <XCircle className="w-5 h-5 text-error-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-error-700 dark:text-error-400">Không thể tải</p>
+                  <p className="text-sm text-error-600 dark:text-error-400/80 mt-0.5">
+                    {error instanceof Error ? error.message : 'Lỗi không xác định'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {!isLoading && !error && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 animate-fade-in">
             {invoices.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">No invoices yet. Take a picture to get started!</p>
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-20 h-20 rounded-3xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-4">
+                  <FileText className="w-10 h-10 text-surface-400 dark:text-surface-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-surface-700 dark:text-surface-300 mb-1">
+                  Chưa có hóa đơn nào
+                </h3>
+                <p className="text-sm text-surface-500 dark:text-surface-400 text-center max-w-[240px]">
+                  Chụp ảnh hóa đơn để bắt đầu trích xuất dữ liệu
+                </p>
               </div>
             ) : (
-              invoices.map((invoice) => (
-                <button
-                  key={invoice.id}
-                  className="flex items-center gap-4 rounded-xl bg-surface-light p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-surface-dark text-left w-full"
-                  onClick={() => handleInvoiceClick(invoice.id)}
-                >
-                  <div className="h-16 w-16 flex-shrink-0 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
-                    {invoice.image_path ? (
-                      <img 
-                        alt="Invoice thumbnail" 
-                        className="h-full w-full object-cover" 
-                        src={getImageUrl(invoice.image_path) || ''}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    {!invoice.image_path && (
-                      <span className="text-gray-400 text-2xl">📄</span>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h2 className="font-semibold text-text-light dark:text-text-dark">
-                      Invoice {invoice.id.slice(-8)}
-                    </h2>
-                    <div className={`mt-1 flex items-center gap-1.5 text-sm ${getStatusColor(invoice.status)}`}>
-                      {getStatusIcon(invoice.status)}
-                      <p>{getStatusText(invoice.status)}</p>
+              invoices.map((invoice, index) => {
+                const statusConfig = getStatusConfig(invoice.status);
+                return (
+                  <button
+                    key={invoice.id}
+                    className="card-interactive flex items-center gap-4 text-left w-full"
+                    onClick={() => handleInvoiceClick(invoice.id)}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {invoice.image_path ? (
+                        <img
+                          alt="Ảnh đại diện hóa đơn"
+                          className="w-full h-full object-cover"
+                          src={getImageUrl(invoice.image_path) || ''}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <FileText className={`w-6 h-6 text-surface-400 ${invoice.image_path ? 'hidden' : ''}`} />
                     </div>
-                    {invoice.error_message && (
-                      <p className="mt-1 text-xs text-red-500 truncate">{invoice.error_message}</p>
-                    )}
-                  </div>
-                  <span className="material-symbols-outlined text-text-light-secondary dark:text-text-dark-secondary">›</span>
-                </button>
-              ))
+                    
+                    <div className="flex-grow min-w-0">
+                      <h2 className="font-semibold text-surface-900 dark:text-white truncate">
+                        Hóa đơn #{invoice.id.slice(-8).toUpperCase()}
+                      </h2>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={statusConfig.className}>
+                          {statusConfig.icon}
+                          <span>{statusConfig.text}</span>
+                        </span>
+                      </div>
+                      {invoice.error_message && (
+                        <p className="text-xs text-error-500 mt-1 truncate">
+                          {invoice.error_message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <ChevronRight className="w-5 h-5 text-surface-400 shrink-0" />
+                  </button>
+                );
+              })
             )}
           </div>
         )}
       </main>
 
-      {/* Floating Action Button */}
-      <div className="absolute bottom-6 right-6">
-        <button 
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+      <div className="fixed bottom-6 right-6 safe-bottom z-50">
+        <button
+          className="fab"
           onClick={() => navigate('/take-picture')}
+          aria-label="Quét hóa đơn mới"
         >
-          <span className="text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>📷</span>
+          <Camera className="w-6 h-6" />
         </button>
       </div>
     </div>
