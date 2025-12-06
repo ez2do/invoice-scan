@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,18 +47,19 @@ func main() {
 
 	router := gin.Default()
 
+	corsOrigins := config.GetStringSlice("cors.origin")
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = corsOrigins
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Cache-Control", "X-File-Name"}
+	corsConfig.ExposeHeaders = []string{"Content-Length", "Content-Type"}
+	corsConfig.AllowCredentials = false
+	corsConfig.MaxAge = 12 * time.Hour
+	router.Use(cors.New(corsConfig))
 	router.Use(gin.Recovery())
 
-	corsOrigin := config.GetStringWithDefaultValue("cors.origin", "http://localhost:5173")
-
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{corsOrigin}
-	corsConfig.AllowMethods = []string{"GET", "POST", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
-	corsConfig.AllowCredentials = false
-	router.Use(cors.New(corsConfig))
-
 	router.Static("/uploads", uploadPath)
+	router.StaticFile("/ssl/rootCA.pem", "./ssl/rootCA.pem")
 
 	extractionService, err := pkgextraction.NewGeminiExtraction(geminiAPIKey)
 	if err != nil {
@@ -72,17 +74,20 @@ func main() {
 	extractHandler := handlers.NewExtractHandler(extractionService)
 	invoiceHandler := handlers.NewInvoiceHandler(invoiceRepo, fileStorage, extractionService)
 
-	api := router.Group("/api")
+	v1 := router.Group("/api/v1")
 	{
-		api.GET("/health", healthHandler)
-		api.POST("/extract", extractHandler.Extract)
-		api.POST("/invoices/upload", invoiceHandler.Upload)
-		api.GET("/invoices", invoiceHandler.List)
-		api.GET("/invoices/:id", invoiceHandler.GetByID)
+		v1.GET("/health", healthHandler)
+		v1.POST("/extract", extractHandler.Extract)
+		v1.POST("/invoices/upload", invoiceHandler.Upload)
+		v1.GET("/invoices", invoiceHandler.List)
+		v1.GET("/invoices/:id", invoiceHandler.GetByID)
 	}
 
 	host := config.GetStringWithDefaultValue("server.host", "localhost")
 	port := config.GetStringWithDefaultValue("server.port", "3001")
+	sslEnabled := config.GetBoolWithDefaultValue("server.ssl.enabled", false)
+	sslCertFile := config.GetStringWithDefaultValue("server.ssl.cert_file", "./ssl/cert.pem")
+	sslKeyFile := config.GetStringWithDefaultValue("server.ssl.key_file", "./ssl/key.pem")
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 	srv := &http.Server{
@@ -91,9 +96,16 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Server starting on %s", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+		if sslEnabled {
+			log.Printf("Server starting on https://%s", addr)
+			if err := srv.ListenAndServeTLS(sslCertFile, sslKeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("Failed to start HTTPS server: %v", err)
+			}
+		} else {
+			log.Printf("Server starting on http://%s", addr)
+			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("Failed to start server: %v", err)
+			}
 		}
 	}()
 

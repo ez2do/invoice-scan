@@ -1,16 +1,35 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { useAppStore } from '@/stores/app-store';
+import { apiClient } from '@/lib/api';
 
 export default function ReviewPicturePage() {
   const navigate = useNavigate();
   const { currentImage, clearData } = useAppStore();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const uploadMutation = useMutation({
+    mutationFn: apiClient.uploadInvoice.bind(apiClient),
+    onSuccess: () => {
+      setIsUploading(false);
+      clearData();
+      navigate('/list-invoices');
+    },
+    onError: (error: Error) => {
+      setIsUploading(false);
+      alert(`Failed to upload invoice: ${error.message}`);
+    },
+  });
 
   const handleRetake = () => {
     navigate('/take-picture');
   };
 
   const handleExtractData = () => {
-    navigate('/extract-invoice-data');
+    if (!currentImage) return;
+    setIsUploading(true);
+    uploadMutation.mutate(currentImage);
   };
 
   const handleBack = () => {
@@ -63,11 +82,21 @@ export default function ReviewPicturePage() {
             Retake
           </button>
           <button 
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-white transition-colors hover:bg-primary/90"
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleExtractData}
+            disabled={isUploading}
           >
-            <span className="text-xl">📄</span>
-            Extract Data
+            {isUploading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xl">📄</span>
+                Extract Data
+              </>
+            )}
           </button>
         </div>
       </footer>

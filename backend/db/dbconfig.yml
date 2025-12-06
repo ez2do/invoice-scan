@@ -1,6 +1,12 @@
 development:
   dialect: mysql
+  datasource: invoice_user:rootpassword@tcp(localhost:3306)/invoice_scan?parseTime=true
+  dir: migrations
+  table: schema_migrations
+
+mysql_env:
+  dialect: mysql
   datasource: ${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_NAME}?parseTime=true
-  dir: db/migrations
-  table: migrations
+  dir: migrations
+  table: schema_migrations
 

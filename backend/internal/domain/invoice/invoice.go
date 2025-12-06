@@ -86,8 +86,8 @@ type TableData struct {
 }
 
 type ExtractedData struct {
-	KeyValuePairs []KeyValuePair `json:"keyValuePairs"`
-	Table         *TableData     `json:"table,omitempty"`
+	KeyValuePairs []KeyValuePair `json:"key_value_pairs"`
+	Table         TableData      `json:"table"`
 	Summary       []KeyValuePair `json:"summary"`
 	Confidence    *float64       `json:"confidence,omitempty"`
 }

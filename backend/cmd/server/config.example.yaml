@@ -1,6 +1,10 @@
 server:
   host: localhost
   port: "3001"
+  ssl:
+    enabled: false
+    cert_file: "./ssl/cert.pem"
+    key_file: "./ssl/key.pem"
 
 gemini:
   api_key: ""

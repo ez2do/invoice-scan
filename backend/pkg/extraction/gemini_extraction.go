@@ -90,14 +90,14 @@ func (s *GeminiExtraction) Extract(ctx context.Context, imageBytes []byte, mimeT
 		return invoice.ExtractedData{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	return *invoiceData, nil
+	return invoiceData, nil
 }
 
 func buildExtractionPrompt() string {
 	return `Extract invoice data from this image and return ONLY valid JSON in the following format:
 
 {
-  "keyValuePairs": [
+  "key_value_pairs": [
     {"key": "Invoice Number", "value": "...", "confidence": 0.95},
     {"key": "Date", "value": "...", "confidence": 0.90},
     {"key": "Vendor", "value": "...", "confidence": 0.85}
@@ -128,7 +128,7 @@ Rules:
 - Extract dates, amounts, and numbers accurately`
 }
 
-func parseGeminiResponse(text string) (*invoice.ExtractedData, error) {
+func parseGeminiResponse(text string) (invoice.ExtractedData, error) {
 	text = strings.TrimSpace(text)
 
 	text = strings.TrimPrefix(text, "```json")
@@ -138,8 +138,8 @@ func parseGeminiResponse(text string) (*invoice.ExtractedData, error) {
 
 	var extractedData invoice.ExtractedData
 	if err := json.Unmarshal([]byte(text), &extractedData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+		return invoice.ExtractedData{}, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
-	return &extractedData, nil
+	return extractedData, nil
 }

@@ -10,6 +10,13 @@ export interface TableData {
   rows: string[][];
 }
 
+export interface ExtractedData {
+  key_value_pairs: KeyValuePair[] | null;
+  table: TableData;
+  summary: KeyValuePair[];
+  confidence?: number;
+}
+
 export interface InvoiceData {
   keyValuePairs: KeyValuePair[];
   table: TableData | null;
@@ -27,6 +34,36 @@ export interface ExtractResponse {
   data?: InvoiceData;
   error?: string;
   processingTime?: number;
+}
+
+export type InvoiceStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface InvoiceListItem {
+  id: string;
+  status: InvoiceStatus;
+  image_path: string;
+  created_at: string;
+  updated_at?: string;
+  extracted_data?: ExtractedData;
+  error_message?: string;
+}
+
+export interface UploadResponse {
+  success: boolean;
+  data?: InvoiceListItem;
+  error?: string;
+}
+
+export interface InvoicesResponse {
+  success: boolean;
+  data?: InvoiceListItem[];
+  error?: string;
+}
+
+export interface InvoiceResponse {
+  success: boolean;
+  data?: InvoiceListItem;
+  error?: string;
 }
 
 // App State Types

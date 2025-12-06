@@ -37,35 +37,35 @@ func NewInvoiceHandler(
 func (h *InvoiceHandler) Upload(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Image file is required: " + err.Error(),
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Image file is required: " + err.Error(),
 		})
 		return
 	}
 
 	if file.Size == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Image file is empty",
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Image file is empty",
 		})
 		return
 	}
 
 	const maxSize = 10 * 1024 * 1024
 	if file.Size > maxSize {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Image file too large (max 10MB)",
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Image file too large (max 10MB)",
 		})
 		return
 	}
 
 	src, err := file.Open()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Failed to open image file: " + err.Error(),
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Failed to open image file: " + err.Error(),
 		})
 		return
 	}
@@ -73,17 +73,17 @@ func (h *InvoiceHandler) Upload(c *gin.Context) {
 
 	imageBytes, err := io.ReadAll(src)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Failed to read image file: " + err.Error(),
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Failed to read image file: " + err.Error(),
 		})
 		return
 	}
 
 	if len(imageBytes) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Image file is empty",
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Image file is empty",
 		})
 		return
 	}
@@ -94,9 +94,9 @@ func (h *InvoiceHandler) Upload(c *gin.Context) {
 	}
 
 	if !strings.HasPrefix(mimeType, "image/") {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Invalid file type. Only images are allowed",
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid file type. Only images are allowed",
 		})
 		return
 	}
@@ -106,32 +106,29 @@ func (h *InvoiceHandler) Upload(c *gin.Context) {
 
 	imagePath, err := h.storage.Save(c.Request.Context(), filename, imageBytes, mimeType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   "Failed to save image: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to save image: " + err.Error(),
 		})
 		return
 	}
 
 	inv := invoice.New(id, imagePath)
 	if err := h.repo.Create(c.Request.Context(), inv); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   "Failed to create invoice: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to create invoice: " + err.Error(),
 		})
 		return
 	}
 
 	h.processExtractionAsync(id, imageBytes, mimeType)
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": gin.H{
-			"id":        inv.ID.String(),
-			"status":    inv.Status.String(),
-			"imagePath": h.storage.GetURL(inv.ImagePath),
-			"createdAt": inv.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		},
+	data := NewInvoiceData(inv, getImagePath(inv.ImagePath))
+
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Data:    data,
 	})
 }
 
@@ -187,40 +184,21 @@ func (h *InvoiceHandler) processExtractionAsync(invoiceID invoice.ID, imageBytes
 func (h *InvoiceHandler) List(c *gin.Context) {
 	invoices, err := h.repo.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   "Failed to list invoices: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to list invoices: " + err.Error(),
 		})
 		return
 	}
 
-	data := make([]gin.H, len(invoices))
-	for i, inv := range []*invoice.Invoice(invoices) {
-		item := gin.H{
-			"id":        inv.ID.String(),
-			"status":    inv.Status.String(),
-			"imagePath": h.storage.GetURL(inv.ImagePath),
-			"createdAt": inv.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			"updatedAt": inv.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		}
-
-		if inv.Status == invoice.StatusCompleted && len(inv.ExtractedData) > 0 {
-			var extractedData interface{}
-			if err := json.Unmarshal(inv.ExtractedData, &extractedData); err == nil {
-				item["extractedData"] = extractedData
-			}
-		}
-
-		if inv.ErrorMessage != nil {
-			item["errorMessage"] = *inv.ErrorMessage
-		}
-
-		data[i] = item
+	data := make([]InvoiceData, len(invoices))
+	for i, inv := range invoices {
+		data[i] = NewInvoiceData(inv, getImagePath(inv.ImagePath))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    data,
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Data:    data,
 	})
 }
 
@@ -230,34 +208,22 @@ func (h *InvoiceHandler) GetByID(c *gin.Context) {
 
 	inv, err := h.repo.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"success": false,
-			"error":   "Invoice not found",
+		c.JSON(http.StatusNotFound, ErrorResponse{
+			Success: false,
+			Error:   "Invoice not found",
 		})
 		return
 	}
 
-	data := gin.H{
-		"id":        inv.ID.String(),
-		"status":    inv.Status.String(),
-		"imagePath": h.storage.GetURL(inv.ImagePath),
-		"createdAt": inv.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"updatedAt": inv.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}
+	data := NewInvoiceData(inv, getImagePath(inv.ImagePath))
 
-	if len(inv.ExtractedData) > 0 {
-		var extractedData interface{}
-		if err := json.Unmarshal(inv.ExtractedData, &extractedData); err == nil {
-			data["extractedData"] = extractedData
-		}
-	}
-
-	if inv.ErrorMessage != nil {
-		data["errorMessage"] = *inv.ErrorMessage
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    data,
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Data:    data,
 	})
+}
+
+func getImagePath(fullPath string) string {
+	filename := filepath.Base(fullPath)
+	return fmt.Sprintf("/uploads/%s", filename)
 }

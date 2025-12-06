@@ -24,7 +24,7 @@ function App() {
             <Route path="/list-invoices" element={<ListInvoicesPage />} />
             <Route path="/take-picture" element={<TakePicturePage />} />
             <Route path="/review-picture" element={<ReviewPicturePage />} />
-            <Route path="/extract-invoice-data" element={<ExtractInvoiceDataPage />} />
+            <Route path="/extract-invoice-data/:id?" element={<ExtractInvoiceDataPage />} />
             <Route path="*" element={<Navigate to="/list-invoices" replace />} />
           </Routes>
         </div>

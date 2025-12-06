@@ -1,57 +1,45 @@
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useAppStore } from '@/stores/app-store';
+import { apiClient, getImageUrl } from '@/lib/api';
+import type { InvoiceStatus } from '@/types';
 
 export default function ListInvoicesPage() {
   const navigate = useNavigate();
+  const { setSelectedInvoiceId } = useAppStore();
 
-  const invoices = [
-    {
-      id: '2024-07-21A',
-      title: 'Invoice #2024-07-21A',
-      status: 'done',
-      statusText: 'Extraction Done',
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKeOFth3tWJ_-ufHJnhGVq2K26HfBpX5gFfOELUzQPD7KaDxOVf9wcSC75wCu3KU3sZ03T-E1rn2n0wNYfFtpA_G_3_E-OrXyBZDw6ryFXZdqaORz5JA3bs-az-lXLJk-UnYm6-7PDhS79zn1Yo1xFc8kd_XyP1LS8cgig6C1_e4hdJ08f91wAHjpd59wiGzL37kCT5KDoYrMTluKX6X2fuWdC2Cz_kfg13OAsdRvX0YJhKCBNBRLxDtLeclMsBZlJ2fzngWIxAmlc'
-    },
-    {
-      id: 'costco',
-      title: 'Costco Wholesale',
-      status: 'review',
-      statusText: 'Review Needed',
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqIPAHrmQFxO73mNDELunGSNkzeXiZz-4q_n2VOP9u0RdbJGQHRmwv6THVMVmBy1NGCzM0n32R8gfEoLTzAJFm_IZANkK0iHNiEbGYXhVJTfxyqt6wKFUArT49CxMRVEUbTn9FduN1KvHYLbWSOi71gEKxZTsTBFaNXDpp38PbuFb2rN6y_6FQ_r5rpQdC3t1MOs_I4AkLxYRE_Y_am7OLtFgjZRdn7IW81DU9lmsqq7-SmqCmQC_3GRpDcNk3eO8LQIKlBgUhaJF3'
-    },
-    {
-      id: 'office-depot',
-      title: 'Office Depot',
-      status: 'extracting',
-      statusText: 'Extracting...',
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDdKGLhqQtsr-5L14Wv9HOug420m0Dw0m8xXZrYjGuQElh5ILX3O_6pdWh8xsOMoQ8tkychSaAG9tW8rI9tThAI3x6ZH3n9vkazUFlYzimgreThv6ffwJLMEFkh-YIc2jJcjYKhY6w-osv5k58mVfemiF9IpvtIMw7PdcXb3REoCDdx2r8uKJpX95th18mBdG-RITe66Ap8gwB6cUXP1B5oEIvC55sLexReh1M2Y5_C5AgdXrCWBtIyO_Ppp2F0YNfB_UqTMyWSub-U'
-    },
-    {
-      id: 'utility',
-      title: 'Utility Bill - May',
-      status: 'done',
-      statusText: 'Extraction Done',
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDorFqO0QbrCqR839MMP1c-48fxUhPmcHijsdKoHrGzK6DvKPKJ-w_sPkWFVp1vFAXnJF1UE8e_uIuTWZEaGX6hdDdsonm9VZ49j2J41W1eSEBK248aHuNJVHXQAkwQcZDMiU7Shpl8HQWIXIG3cUpFB0bLExQIIdrwRR2CTGg5CWq9c-mdeM8KlW52B7w2NkiQ9Lpvh8lcbx7gETJy_Jo1JEy3ImnJUXmrTRz-jA1dLEYmSscxqLAQjhdnfbTOuS3_JOEhaRLEzm-j'
-    }
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: () => apiClient.getInvoices(),
+    refetchInterval: 3000,
+  });
 
-  const getStatusIcon = (status: string) => {
+  const invoices = data?.data || [];
+
+  const getStatusIcon = (status: InvoiceStatus) => {
     switch (status) {
-      case 'done':
+      case 'completed':
         return (
           <span className="text-base fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>
             ✓
           </span>
         );
-      case 'review':
+      case 'failed':
         return (
           <span className="text-base fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>
-            ⚠
+            ✗
           </span>
         );
-      case 'extracting':
+      case 'processing':
         return (
           <span className="text-base animate-spin">
             ↻
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="text-base animate-pulse">
+            ⏳
           </span>
         );
       default:
@@ -59,17 +47,39 @@ export default function ListInvoicesPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusText = (status: InvoiceStatus) => {
     switch (status) {
-      case 'done':
+      case 'completed':
+        return 'Extraction Done';
+      case 'failed':
+        return 'Extraction Failed';
+      case 'processing':
+        return 'Extracting...';
+      case 'pending':
+        return 'Waiting...';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: InvoiceStatus) => {
+    switch (status) {
+      case 'completed':
         return 'text-status-green';
-      case 'review':
-        return 'text-status-yellow';
-      case 'extracting':
+      case 'failed':
+        return 'text-red-500';
+      case 'processing':
         return 'text-status-blue';
+      case 'pending':
+        return 'text-gray-500';
       default:
         return 'text-gray-500';
     }
+  };
+
+  const handleInvoiceClick = (invoiceId: string) => {
+    setSelectedInvoiceId(invoiceId);
+    navigate(`/extract-invoice-data/${invoiceId}`);
   };
 
   return (
@@ -87,29 +97,72 @@ export default function ListInvoicesPage() {
 
       {/* Main Content */}
       <main className="flex-grow overflow-y-auto p-4">
-        <div className="flex flex-col gap-4">
-          {invoices.map((invoice) => (
-            <button
-              key={invoice.id}
-              className="flex items-center gap-4 rounded-xl bg-surface-light p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-surface-dark text-left w-full"
-              onClick={() => navigate('/extract-invoice-data')}
-            >
-              <img 
-                alt="Invoice thumbnail" 
-                className="h-16 w-16 flex-shrink-0 rounded-lg object-cover bg-gray-200" 
-                src={invoice.thumbnail}
-              />
-              <div className="flex-grow">
-                <h2 className="font-semibold text-text-light dark:text-text-dark">{invoice.title}</h2>
-                <div className={`mt-1 flex items-center gap-1.5 text-sm ${getStatusColor(invoice.status)}`}>
-                  {getStatusIcon(invoice.status)}
-                  <p>{invoice.statusText}</p>
-                </div>
+        {isLoading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-gray-600 dark:text-gray-300">Loading invoices...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700">
+                Failed to load invoices: {error instanceof Error ? error.message : 'Unknown error'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !error && (
+          <div className="flex flex-col gap-4">
+            {invoices.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">No invoices yet. Take a picture to get started!</p>
               </div>
-              <span className="material-symbols-outlined text-text-light-secondary dark:text-text-dark-secondary">›</span>
-            </button>
-          ))}
-        </div>
+            ) : (
+              invoices.map((invoice) => (
+                <button
+                  key={invoice.id}
+                  className="flex items-center gap-4 rounded-xl bg-surface-light p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-surface-dark text-left w-full"
+                  onClick={() => handleInvoiceClick(invoice.id)}
+                >
+                  <div className="h-16 w-16 flex-shrink-0 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+                    {invoice.image_path ? (
+                      <img 
+                        alt="Invoice thumbnail" 
+                        className="h-full w-full object-cover" 
+                        src={getImageUrl(invoice.image_path) || ''}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    {!invoice.image_path && (
+                      <span className="text-gray-400 text-2xl">📄</span>
+                    )}
+                  </div>
+                  <div className="flex-grow">
+                    <h2 className="font-semibold text-text-light dark:text-text-dark">
+                      Invoice {invoice.id.slice(-8)}
+                    </h2>
+                    <div className={`mt-1 flex items-center gap-1.5 text-sm ${getStatusColor(invoice.status)}`}>
+                      {getStatusIcon(invoice.status)}
+                      <p>{getStatusText(invoice.status)}</p>
+                    </div>
+                    {invoice.error_message && (
+                      <p className="mt-1 text-xs text-red-500 truncate">{invoice.error_message}</p>
+                    )}
+                  </div>
+                  <span className="material-symbols-outlined text-text-light-secondary dark:text-text-dark-secondary">›</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </main>
 
       {/* Floating Action Button */}

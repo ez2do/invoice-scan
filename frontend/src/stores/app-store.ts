@@ -7,12 +7,14 @@ interface AppStore {
   extractedData: InvoiceData | null;
   isLoading: boolean;
   error: string | null;
+  selectedInvoiceId: string | null;
   
   // Actions
   setCurrentImage: (image: string | null) => void;
   setExtractedData: (data: InvoiceData | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setSelectedInvoiceId: (id: string | null) => void;
   clearData: () => void;
   updateKeyValue: (index: number, key: string, value: string) => void;
   updateTableCell: (rowIndex: number, colIndex: number, value: string) => void;
@@ -25,6 +27,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   extractedData: null,
   isLoading: false,
   error: null,
+  selectedInvoiceId: null,
 
   // Actions
   setCurrentImage: (image) => set({ currentImage: image }),
@@ -35,11 +38,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   
   setError: (error) => set({ error }),
   
+  setSelectedInvoiceId: (id) => set({ selectedInvoiceId: id }),
+  
   clearData: () => set({
     currentImage: null,
     extractedData: null,
     isLoading: false,
     error: null,
+    selectedInvoiceId: null,
   }),
 
   updateKeyValue: (index, key, value) => {
