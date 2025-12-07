@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import type { CameraConfig } from '@/types';
 
+interface CropRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface UseCameraResult {
   stream: MediaStream | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  captureImage: () => string | null;
+  captureImage: (cropRegion?: CropRegion) => string | null;
   error: string | null;
   isSupported: boolean;
   isActive: boolean;
@@ -147,7 +154,7 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
     }
   };
 
-  const captureImage = (): string | null => {
+  const captureImage = (cropRegion?: CropRegion): string | null => {
     if (!videoRef.current || !streamRef.current) {
       setError('Camera is not active');
       return null;
@@ -163,14 +170,26 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
         return null;
       }
 
-      // Set canvas dimensions to video dimensions
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      if (cropRegion) {
+        canvas.width = cropRegion.width;
+        canvas.height = cropRegion.height;
+        ctx.drawImage(
+          video,
+          cropRegion.x,
+          cropRegion.y,
+          cropRegion.width,
+          cropRegion.height,
+          0,
+          0,
+          cropRegion.width,
+          cropRegion.height
+        );
+      } else {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
 
-      // Draw the current frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Return as data URL
       return canvas.toDataURL('image/jpeg', 0.9);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to capture image';

@@ -30,7 +30,13 @@ export default function ListInvoicesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['invoices', page],
     queryFn: () => apiClient.getInvoices(page, PAGE_SIZE),
-    refetchInterval: 3000,
+    refetchInterval: (query) => {
+      const invoices = query.state.data?.data || [];
+      const hasActiveInvoices = invoices.some(
+        (inv) => inv.status === 'pending' || inv.status === 'processing'
+      );
+      return hasActiveInvoices ? 10000 : false;
+    },
   });
 
   const deleteMutation = useMutation({

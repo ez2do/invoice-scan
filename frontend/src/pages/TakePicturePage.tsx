@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Zap, Camera, AlertCircle } from 'lucide-react';
 import { useCamera } from '@/hooks/useCamera';
@@ -6,6 +6,7 @@ import { useAppStore } from '@/stores/app-store';
 
 export default function TakePicturePage() {
   const navigate = useNavigate();
+  const frameRef = useRef<HTMLDivElement>(null);
   const {
     videoRef,
     captureImage,
@@ -31,8 +32,55 @@ export default function TakePicturePage() {
     };
   }, [isSupported]);
 
+  const calculateCropRegion = () => {
+    const video = videoRef.current;
+    const frame = frameRef.current;
+    if (!video || !frame) return undefined;
+
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    const displayWidth = video.clientWidth;
+    const displayHeight = video.clientHeight;
+
+    if (!videoWidth || !videoHeight || !displayWidth || !displayHeight) return undefined;
+
+    const videoAspect = videoWidth / videoHeight;
+    const displayAspect = displayWidth / displayHeight;
+
+    let scale: number;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (videoAspect > displayAspect) {
+      scale = videoHeight / displayHeight;
+      offsetX = (videoWidth - displayWidth * scale) / 2;
+    } else {
+      scale = videoWidth / displayWidth;
+      offsetY = (videoHeight - displayHeight * scale) / 2;
+    }
+
+    const frameRect = frame.getBoundingClientRect();
+    const videoRect = video.getBoundingClientRect();
+
+    const frameRelX = frameRect.left - videoRect.left;
+    const frameRelY = frameRect.top - videoRect.top;
+
+    const cropX = Math.max(0, offsetX + frameRelX * scale);
+    const cropY = Math.max(0, offsetY + frameRelY * scale);
+    const cropWidth = Math.min(frameRect.width * scale, videoWidth - cropX);
+    const cropHeight = Math.min(frameRect.height * scale, videoHeight - cropY);
+
+    return {
+      x: Math.round(cropX),
+      y: Math.round(cropY),
+      width: Math.round(cropWidth),
+      height: Math.round(cropHeight),
+    };
+  };
+
   const handleCapture = () => {
-    const imageData = captureImage();
+    const cropRegion = calculateCropRegion();
+    const imageData = captureImage(cropRegion);
     if (imageData) {
       setCurrentImage(imageData);
       navigate('/review-picture');
@@ -110,7 +158,7 @@ export default function TakePicturePage() {
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-sm aspect-[0.707] relative">
+          <div ref={frameRef} className="w-full max-w-sm aspect-[0.707] relative">
             <div className="absolute inset-0 border-2 border-white/40 rounded-2xl" />
             <div className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-white rounded-tl-xl" />
             <div className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-white rounded-tr-xl" />
