@@ -13,7 +13,10 @@ export default function TakePicturePage() {
     isSupported,
     isActive,
     startCamera,
-    stopCamera
+    stopCamera,
+    torch,
+    supportsTorch,
+    toggleTorch
   } = useCamera();
 
   const { setCurrentImage } = useAppStore();
@@ -93,11 +96,16 @@ export default function TakePicturePage() {
           >
             <X className="w-5 h-5" />
           </button>
-          <button 
-            className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all"
-            aria-label="Đèn flash"
+          <button
+            className={`w-11 h-11 rounded-xl backdrop-blur-sm flex items-center justify-center transition-all ${torch
+                ? 'bg-yellow-400/20 text-yellow-400 hover:bg-yellow-400/30'
+                : 'bg-white/10 text-white hover:bg-white/20'
+              } ${!supportsTorch ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+            onClick={toggleTorch}
+            disabled={!supportsTorch}
+            aria-label={torch ? "Tắt đèn flash" : "Bật đèn flash"}
           >
-            <Zap className="w-5 h-5" />
+            <Zap className={`w-5 h-5 ${torch ? 'fill-current' : ''}`} />
           </button>
         </div>
 

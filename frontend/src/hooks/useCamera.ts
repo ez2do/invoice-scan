@@ -9,7 +9,10 @@ interface UseCameraResult {
   isSupported: boolean;
   isActive: boolean;
   startCamera: () => Promise<void>;
-  stopCamera: () => void;
+  stopCamera: () => Promise<void>;
+  torch: boolean;
+  supportsTorch: boolean;
+  toggleTorch: () => Promise<void>;
 }
 
 const defaultConfig: CameraConfig = {
@@ -24,7 +27,10 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [torch, setTorch] = useState(false);
+  const [supportsTorch, setSupportsTorch] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const isSupported = 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices;
 
@@ -43,14 +49,14 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
 
     try {
       setError(null);
-      
+
       // Try with mobile-optimized constraints first
       const mobileConfig = {
         video: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1280, max: 1920 },
           height: { ideal: 720, max: 1080 },
-          aspectRatio: { ideal: 16/9 }
+          aspectRatio: { ideal: 16 / 9 }
         }
       };
 
@@ -64,14 +70,22 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
       }
 
       setStream(mediaStream);
+      streamRef.current = mediaStream;
       setIsActive(true);
+
+      // Check for torch support
+      const track = mediaStream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      if (capabilities.torch) {
+        setSupportsTorch(true);
+      }
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err: any) {
       let errorMessage = 'Failed to access camera';
-      
+
       if (err.name === 'NotAllowedError') {
         errorMessage = 'Camera permission denied. Please allow camera access and try again.';
       } else if (err.name === 'NotFoundError') {
@@ -89,16 +103,52 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
     }
   };
 
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+  const stopCamera = async () => {
+    const activeStream = streamRef.current;
+    if (activeStream) {
+      // First, explicitly turn off the torch if it's on
+      if (torch) {
+        const track = activeStream.getVideoTracks()[0];
+        try {
+          await track.applyConstraints({
+            advanced: [{ torch: false } as any]
+          });
+        } catch (err) {
+          console.error('Failed to turn off torch:', err);
+        }
+      }
+
+      // Then stop all tracks
+      activeStream.getTracks().forEach(track => {
+        track.stop();
+      });
       setStream(null);
+      streamRef.current = null;
       setIsActive(false);
+      setTorch(false);
+      setSupportsTorch(false);
+    }
+  };
+
+  const toggleTorch = async () => {
+    const activeStream = streamRef.current;
+    if (!activeStream) return;
+    const track = activeStream.getVideoTracks()[0];
+    const newTorchState = !torch;
+
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: newTorchState } as any]
+      });
+      setTorch(newTorchState);
+    } catch (err) {
+      console.error('Failed to toggle torch:', err);
+      // Don't set error state here as it's a non-critical error
     }
   };
 
   const captureImage = (): string | null => {
-    if (!videoRef.current || !stream) {
+    if (!videoRef.current || !streamRef.current) {
       setError('Camera is not active');
       return null;
     }
@@ -145,5 +195,8 @@ export function useCamera(config: CameraConfig = defaultConfig): UseCameraResult
     isActive,
     startCamera,
     stopCamera,
+    torch,
+    supportsTorch,
+    toggleTorch,
   };
 }
