@@ -15,7 +15,10 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-RUN mkdir -p /etc/nginx/ssl
+RUN mkdir -p /etc/nginx/ssl && \
+    mkdir -p /usr/share/nginx/uploads && \
+    chown -R nginx:nginx /usr/share/nginx/uploads && \
+    chmod -R 755 /usr/share/nginx/uploads
 
 EXPOSE 80 443
 
