@@ -31,4 +31,5 @@ type Repository interface {
 	GetByID(ctx context.Context, id ID) (*Invoice, error)
 	List(ctx context.Context, params PaginationParams) (*PaginatedResult, error)
 	Update(ctx context.Context, invoice *Invoice, updateFunc func(*Invoice) error) error
+	Delete(ctx context.Context, id ID) error
 }

@@ -243,6 +243,41 @@ func (h *InvoiceHandler) GetByID(c *gin.Context) {
 	})
 }
 
+func (h *InvoiceHandler) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id := invoice.ID(idStr)
+
+	inv, err := h.repo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{
+			Success: false,
+			Error:   "Invoice not found",
+		})
+		return
+	}
+
+	// Delete image file
+	if inv.ImagePath != "" {
+		if err := h.storage.Delete(c.Request.Context(), inv.ImagePath); err != nil {
+			log.Printf("Failed to delete image file %s: %v", inv.ImagePath, err)
+		}
+	}
+
+	// Delete database record
+	if err := h.repo.Delete(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to delete invoice: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Data:    nil,
+	})
+}
+
 func getImagePath(fullPath string) string {
 	filename := filepath.Base(fullPath)
 	return fmt.Sprintf("/uploads/%s", filename)

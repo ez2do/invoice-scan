@@ -114,6 +114,15 @@ func (r *InvoiceGormRepo) Update(ctx context.Context, inv *invoice.Invoice, upda
 	return db.Updates(&gormInv).Error
 }
 
+func (r *InvoiceGormRepo) Delete(ctx context.Context, id invoice.ID) error {
+	db := getDBFromContext(ctx, r.db)
+	err := db.WithContext(ctx).Delete(&gormInvoice{}, "id = ?", id.String()).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *InvoiceGormRepo) toGorm(inv *invoice.Invoice) *gormInvoice {
 	var errorMsg sql.NullString
 	if inv.ErrorMessage != nil {

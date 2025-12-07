@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   Camera,
@@ -9,16 +9,23 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { apiClient, getImageUrl } from '@/lib/api';
 import type { InvoiceStatus } from '@/types';
 
 const PAGE_SIZE = 10;
+const SWIPE_THRESHOLD = 80;
 
 export default function ListInvoicesPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchCurrentX = useRef<number>(0);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['invoices', page],
@@ -26,9 +33,69 @@ export default function ListInvoicesPage() {
     refetchInterval: 3000,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.deleteInvoice(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setDeletingId(null);
+      setSwipedId(null);
+    },
+    onError: () => {
+      setDeletingId(null);
+    },
+  });
+
   const invoices = data?.data || [];
   const totalPages = data?.total_pages || 1;
   const total = data?.total || 0;
+
+  const handleDelete = (invoiceId: string) => {
+    setDeletingId(invoiceId);
+    deleteMutation.mutate(invoiceId);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, invoiceId: string) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchCurrentX.current = e.touches[0].clientX;
+    // Close other swiped items
+    if (swipedId && swipedId !== invoiceId) {
+      setSwipedId(null);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, invoiceId: string, element: HTMLDivElement | null) => {
+    if (!element) return;
+    touchCurrentX.current = e.touches[0].clientX;
+    const diff = touchStartX.current - touchCurrentX.current;
+
+    if (diff > 0) {
+      // Swiping left - show delete
+      const translateX = Math.min(diff, SWIPE_THRESHOLD);
+      element.style.transform = `translateX(-${translateX}px)`;
+    } else if (swipedId === invoiceId) {
+      // Swiping right when already swiped - close
+      const translateX = Math.max(SWIPE_THRESHOLD + diff, 0);
+      element.style.transform = `translateX(-${translateX}px)`;
+    }
+  };
+
+  const handleTouchEnd = (invoiceId: string, element: HTMLDivElement | null) => {
+    if (!element) return;
+    const diff = touchStartX.current - touchCurrentX.current;
+
+    if (diff > SWIPE_THRESHOLD / 2) {
+      // Swiped enough - keep open
+      element.style.transform = `translateX(-${SWIPE_THRESHOLD}px)`;
+      setSwipedId(invoiceId);
+    } else if (swipedId === invoiceId && diff < -20) {
+      // Swiped back - close
+      element.style.transform = 'translateX(0)';
+      setSwipedId(null);
+    } else {
+      // Not enough swipe - reset
+      element.style.transform = swipedId === invoiceId ? `translateX(-${SWIPE_THRESHOLD}px)` : 'translateX(0)';
+    }
+  };
 
   const getStatusConfig = (status: InvoiceStatus) => {
     switch (status) {
@@ -66,6 +133,11 @@ export default function ListInvoicesPage() {
   };
 
   const handleInvoiceClick = (invoiceId: string) => {
+    // Prevent navigation if item is swiped
+    if (swipedId === invoiceId) {
+      setSwipedId(null);
+      return;
+    }
     navigate(`/extract-invoice-data/${invoiceId}`);
   };
 
@@ -127,48 +199,74 @@ export default function ListInvoicesPage() {
               <>
                 {invoices.map((invoice, index) => {
                   const statusConfig = getStatusConfig(invoice.status);
+                  let cardRef: HTMLDivElement | null = null;
                   return (
-                    <button
+                    <div
                       key={invoice.id}
-                      className="card-interactive flex items-center gap-4 text-left w-full"
-                      onClick={() => handleInvoiceClick(invoice.id)}
+                      className="relative overflow-hidden rounded-2xl"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {invoice.image_path ? (
-                          <img
-                            alt="Ảnh đại diện hóa đơn"
-                            className="w-full h-full object-cover"
-                            src={getImageUrl(invoice.image_path) || ''}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <FileText className={`w-6 h-6 text-surface-400 ${invoice.image_path ? 'hidden' : ''}`} />
+                      {/* Delete action background */}
+                      <div className="absolute inset-y-0 right-0 w-20 bg-error-500 flex items-center justify-center">
+                        <button
+                          onClick={() => handleDelete(invoice.id)}
+                          disabled={deletingId === invoice.id}
+                          className="w-full h-full flex items-center justify-center text-white"
+                          aria-label="Xóa hóa đơn"
+                        >
+                          {deletingId === invoice.id ? (
+                            <Loader2 className="w-6 h-6 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-6 h-6" />
+                          )}
+                        </button>
                       </div>
 
-                      <div className="flex-grow min-w-0">
-                        <h2 className="font-semibold text-surface-900 dark:text-white truncate">
-                          Hóa đơn #{invoice.id.slice(-8).toUpperCase()}
-                        </h2>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className={statusConfig.className}>
-                            {statusConfig.icon}
-                            <span>{statusConfig.text}</span>
-                          </span>
+                      {/* Swipeable card */}
+                      <div
+                        ref={(el) => { cardRef = el; }}
+                        className="card-interactive flex items-center gap-4 text-left w-full relative bg-white dark:bg-surface-900 transition-transform duration-150"
+                        onClick={() => handleInvoiceClick(invoice.id)}
+                        onTouchStart={(e) => handleTouchStart(e, invoice.id)}
+                        onTouchMove={(e) => handleTouchMove(e, invoice.id, cardRef)}
+                        onTouchEnd={() => handleTouchEnd(invoice.id, cardRef)}
+                      >
+                        <div className="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 overflow-hidden shrink-0 flex items-center justify-center">
+                          {invoice.image_path ? (
+                            <img
+                              alt="Ảnh đại diện hóa đơn"
+                              className="w-full h-full object-cover"
+                              src={getImageUrl(invoice.image_path) || ''}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <FileText className={`w-6 h-6 text-surface-400 ${invoice.image_path ? 'hidden' : ''}`} />
                         </div>
-                        {invoice.error_message && (
-                          <p className="text-xs text-error-500 mt-1 truncate">
-                            {invoice.error_message}
-                          </p>
-                        )}
-                      </div>
 
-                      <ChevronRight className="w-5 h-5 text-surface-400 shrink-0" />
-                    </button>
+                        <div className="flex-grow min-w-0">
+                          <h2 className="font-semibold text-surface-900 dark:text-white truncate">
+                            Hóa đơn #{invoice.id.slice(-8).toUpperCase()}
+                          </h2>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className={statusConfig.className}>
+                              {statusConfig.icon}
+                              <span>{statusConfig.text}</span>
+                            </span>
+                          </div>
+                          {invoice.error_message && (
+                            <p className="text-xs text-error-500 mt-1 truncate">
+                              {invoice.error_message}
+                            </p>
+                          )}
+                        </div>
+
+                        <ChevronRight className="w-5 h-5 text-surface-400 shrink-0" />
+                      </div>
+                    </div>
                   );
                 })}
 
@@ -223,3 +321,4 @@ export default function ListInvoicesPage() {
     </div>
   );
 }
+

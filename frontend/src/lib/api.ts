@@ -122,6 +122,24 @@ class APIClient {
     }
   }
 
+  async deleteInvoice(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseURL}/invoices/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Delete Invoice Error:', error);
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to delete invoice'
+      );
+    }
+  }
+
   private async dataURLToBlob(dataURL: string): Promise<Blob> {
     const response = await fetch(dataURL);
     return await response.blob();
