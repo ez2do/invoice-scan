@@ -117,6 +117,18 @@ export default defineConfig({
       key: fs.readFileSync(sslKeyPath),
       cert: fs.readFileSync(sslCertPath)
     } : undefined,
+    proxy: {
+      '/api': {
+        target: 'https://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/uploads': {
+        target: 'https://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     rollupOptions: {
