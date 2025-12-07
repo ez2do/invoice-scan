@@ -38,7 +38,6 @@ services:
       - "443:443"
     volumes:
       - ${SSL_CERT_PATH:-./ssl}:/etc/nginx/ssl:ro
-      - backend_uploads:/usr/share/nginx/uploads:ro
     networks:
       - internal
 
