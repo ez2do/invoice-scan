@@ -1,15 +1,18 @@
 <svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
-        </linearGradient>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#grad)" rx="24" />
-    <g transform="translate(38.400000000000006, 38.400000000000006)">
-        <rect x="19.200000000000003" y="19.200000000000003" width="76.80000000000001" height="96" fill="white" rx="9.600000000000001" />
-        <line x1="28.799999999999997" y1="48" x2="86.4" y2="48" stroke="#3b82f6" stroke-width="3.84" />
-        <line x1="28.799999999999997" y1="67.19999999999999" x2="67.19999999999999" y2="67.19999999999999" stroke="#3b82f6" stroke-width="2.88" />
-        <line x1="28.799999999999997" y1="86.4" x2="76.80000000000001" y2="86.4" stroke="#3b82f6" stroke-width="2.88" />
-    </g>
+  <defs>
+    <linearGradient id="grad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#grad192)" rx="38.4"/>
+  <g transform="translate(32, 32)">
+    <rect x="16" y="16" width="96" height="128" fill="white" rx="12.8" stroke="#e0e7ff" stroke-width="0.5"/>
+    <rect x="24" y="32" width="80" height="6.4" fill="#3b82f6" rx="3.2"/>
+    <rect x="24" y="48" width="64" height="6.4" fill="#60a5fa" rx="3.2"/>
+    <rect x="24" y="64" width="72" height="6.4" fill="#60a5fa" rx="3.2"/>
+    <rect x="24" y="80" width="56" height="6.4" fill="#93c5fd" rx="3.2"/>
+    <rect x="24" y="96" width="80" height="6.4" fill="#93c5fd" rx="3.2"/>
+    <circle cx="88" cy="120" r="8" fill="#3b82f6"/>
+  </g>
 </svg>
