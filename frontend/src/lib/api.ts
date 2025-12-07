@@ -6,7 +6,7 @@ import type {
   ExtractedData
 } from '@/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3001/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 function getImageUrl(imagePath: string | null | undefined): string | null {
   if (!imagePath) return null;
@@ -15,13 +15,11 @@ function getImageUrl(imagePath: string | null | undefined): string | null {
     return imagePath;
   }
 
-  const baseUrl = API_BASE_URL.replace('/api/v1', '');
-
   if (imagePath.startsWith('/')) {
-    return `${baseUrl}${imagePath}`;
+    return imagePath;
   }
 
-  return `${baseUrl}/${imagePath}`;
+  return `/${imagePath}`;
 }
 
 export { getImageUrl };

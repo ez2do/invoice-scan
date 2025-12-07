@@ -4,7 +4,7 @@ development:
   dir: migrations
   table: schema_migrations
 
-mysql_env:
+production:
   dialect: mysql
   datasource: ${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_NAME}?parseTime=true
   dir: migrations
