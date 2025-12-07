@@ -169,6 +169,17 @@
     @apply fixed inset-0 bg-black/40 backdrop-blur-sm;
     @apply animate-fade-in;
   }
+
+  .pagination-btn {
+    @apply flex items-center justify-center;
+    @apply w-10 h-10 rounded-xl;
+    @apply bg-surface-100 dark:bg-surface-800;
+    @apply text-surface-600 dark:text-surface-400;
+    @apply hover:bg-surface-200 dark:hover:bg-surface-700;
+    @apply active:scale-95;
+    @apply transition-all duration-150;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-100 dark:disabled:hover:bg-surface-800 disabled:active:scale-100;
+  }
 }
 
 @layer utilities {

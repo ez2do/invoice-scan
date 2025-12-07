@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"invoice-scan/backend/internal/domain/invoice"
@@ -182,7 +183,22 @@ func (h *InvoiceHandler) processExtractionAsync(invoiceID invoice.ID, imageBytes
 }
 
 func (h *InvoiceHandler) List(c *gin.Context) {
-	invoices, err := h.repo.List(c.Request.Context())
+	// Parse pagination params with defaults
+	params := invoice.DefaultPaginationParams()
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
+			params.Page = page
+		}
+	}
+
+	if pageSizeStr := c.Query("page_size"); pageSizeStr != "" {
+		if pageSize, err := strconv.Atoi(pageSizeStr); err == nil && pageSize > 0 && pageSize <= 100 {
+			params.PageSize = pageSize
+		}
+	}
+
+	result, err := h.repo.List(c.Request.Context(), params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Success: false,
@@ -191,14 +207,18 @@ func (h *InvoiceHandler) List(c *gin.Context) {
 		return
 	}
 
-	data := make([]InvoiceData, len(invoices))
-	for i, inv := range invoices {
+	data := make([]InvoiceData, len(result.Invoices))
+	for i, inv := range result.Invoices {
 		data[i] = NewInvoiceData(inv, getImagePath(inv.ImagePath))
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Success: true,
-		Data:    data,
+	c.JSON(http.StatusOK, PaginatedInvoicesResponse{
+		Success:    true,
+		Data:       data,
+		Total:      result.Total,
+		Page:       result.Page,
+		PageSize:   result.PageSize,
+		TotalPages: result.TotalPages,
 	})
 }
 

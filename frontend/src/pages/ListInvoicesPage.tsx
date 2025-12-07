@@ -1,27 +1,34 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  FileText, 
-  Camera, 
-  ChevronRight, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
+import {
+  FileText,
+  Camera,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
+  XCircle,
+  Loader2,
   Clock
 } from 'lucide-react';
 import { apiClient, getImageUrl } from '@/lib/api';
 import type { InvoiceStatus } from '@/types';
 
+const PAGE_SIZE = 10;
+
 export default function ListInvoicesPage() {
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['invoices'],
-    queryFn: () => apiClient.getInvoices(),
+    queryKey: ['invoices', page],
+    queryFn: () => apiClient.getInvoices(page, PAGE_SIZE),
     refetchInterval: 3000,
   });
 
   const invoices = data?.data || [];
+  const totalPages = data?.total_pages || 1;
+  const total = data?.total || 0;
 
   const getStatusConfig = (status: InvoiceStatus) => {
     switch (status) {
@@ -60,6 +67,14 @@ export default function ListInvoicesPage() {
 
   const handleInvoiceClick = (invoiceId: string) => {
     navigate(`/extract-invoice-data/${invoiceId}`);
+  };
+
+  const handlePrevPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
+  const handleNextPage = () => {
+    if (page < totalPages) setPage(page + 1);
   };
 
   return (
@@ -109,52 +124,88 @@ export default function ListInvoicesPage() {
                 </p>
               </div>
             ) : (
-              invoices.map((invoice, index) => {
-                const statusConfig = getStatusConfig(invoice.status);
-                return (
-                  <button
-                    key={invoice.id}
-                    className="card-interactive flex items-center gap-4 text-left w-full"
-                    onClick={() => handleInvoiceClick(invoice.id)}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 overflow-hidden shrink-0 flex items-center justify-center">
-                      {invoice.image_path ? (
-                        <img
-                          alt="Ảnh đại diện hóa đơn"
-                          className="w-full h-full object-cover"
-                          src={getImageUrl(invoice.image_path) || ''}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <FileText className={`w-6 h-6 text-surface-400 ${invoice.image_path ? 'hidden' : ''}`} />
-                    </div>
-                    
-                    <div className="flex-grow min-w-0">
-                      <h2 className="font-semibold text-surface-900 dark:text-white truncate">
-                        Hóa đơn #{invoice.id.slice(-8).toUpperCase()}
-                      </h2>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className={statusConfig.className}>
-                          {statusConfig.icon}
-                          <span>{statusConfig.text}</span>
-                        </span>
+              <>
+                {invoices.map((invoice, index) => {
+                  const statusConfig = getStatusConfig(invoice.status);
+                  return (
+                    <button
+                      key={invoice.id}
+                      className="card-interactive flex items-center gap-4 text-left w-full"
+                      onClick={() => handleInvoiceClick(invoice.id)}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {invoice.image_path ? (
+                          <img
+                            alt="Ảnh đại diện hóa đơn"
+                            className="w-full h-full object-cover"
+                            src={getImageUrl(invoice.image_path) || ''}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <FileText className={`w-6 h-6 text-surface-400 ${invoice.image_path ? 'hidden' : ''}`} />
                       </div>
-                      {invoice.error_message && (
-                        <p className="text-xs text-error-500 mt-1 truncate">
-                          {invoice.error_message}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <ChevronRight className="w-5 h-5 text-surface-400 shrink-0" />
-                  </button>
-                );
-              })
+
+                      <div className="flex-grow min-w-0">
+                        <h2 className="font-semibold text-surface-900 dark:text-white truncate">
+                          Hóa đơn #{invoice.id.slice(-8).toUpperCase()}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className={statusConfig.className}>
+                            {statusConfig.icon}
+                            <span>{statusConfig.text}</span>
+                          </span>
+                        </div>
+                        {invoice.error_message && (
+                          <p className="text-xs text-error-500 mt-1 truncate">
+                            {invoice.error_message}
+                          </p>
+                        )}
+                      </div>
+
+                      <ChevronRight className="w-5 h-5 text-surface-400 shrink-0" />
+                    </button>
+                  );
+                })}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-3 mt-4 pb-20">
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={page <= 1}
+                      className="pagination-btn"
+                      aria-label="Trang trước"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <span className="text-sm text-surface-600 dark:text-surface-400 font-medium">
+                      {page} / {totalPages}
+                    </span>
+
+                    <button
+                      onClick={handleNextPage}
+                      disabled={page >= totalPages}
+                      className="pagination-btn"
+                      aria-label="Trang sau"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Total count indicator */}
+                {total > 0 && (
+                  <p className="text-center text-xs text-surface-400 dark:text-surface-500">
+                    Tổng: {total} hóa đơn
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

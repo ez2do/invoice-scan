@@ -141,3 +141,4 @@ ck_cheatsheet.md
 */server/config.yaml
 backend/server
 docker-compose.env
+.agent

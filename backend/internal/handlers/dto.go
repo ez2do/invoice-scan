@@ -15,6 +15,15 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data"`
 }
 
+type PaginatedInvoicesResponse struct {
+	Success    bool          `json:"success"`
+	Data       []InvoiceData `json:"data"`
+	Total      int64         `json:"total"`
+	Page       int           `json:"page"`
+	PageSize   int           `json:"page_size"`
+	TotalPages int           `json:"total_pages"`
+}
+
 type InvoiceData struct {
 	ID            string      `json:"id"`
 	Status        string      `json:"status"`

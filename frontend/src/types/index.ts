@@ -60,6 +60,16 @@ export interface InvoicesResponse {
   error?: string;
 }
 
+export interface PaginatedInvoicesResponse {
+  success: boolean;
+  data: InvoiceListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  error?: string;
+}
+
 export interface InvoiceResponse {
   success: boolean;
   data?: InvoiceListItem;

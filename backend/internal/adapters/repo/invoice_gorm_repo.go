@@ -57,20 +57,48 @@ func (r *InvoiceGormRepo) GetByID(ctx context.Context, id invoice.ID) (*invoice.
 	return r.toDomain(&gormInv), nil
 }
 
-func (r *InvoiceGormRepo) List(ctx context.Context) (invoice.Invoices, error) {
+func (r *InvoiceGormRepo) List(ctx context.Context, params invoice.PaginationParams) (*invoice.PaginatedResult, error) {
 	var (
 		gormInvoices []gormInvoice
+		total        int64
 	)
-	if err := r.db.WithContext(ctx).Order("created_at DESC").
+
+	// Count total records
+	if err := r.db.WithContext(ctx).Model(&gormInvoice{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	// Calculate offset
+	offset := (params.Page - 1) * params.PageSize
+
+	// Fetch paginated records
+	if err := r.db.WithContext(ctx).
+		Order("created_at DESC").
+		Limit(params.PageSize).
+		Offset(offset).
 		Find(&gormInvoices).Error; err != nil {
 		return nil, err
 	}
 
+	// Convert to domain models
 	invoices := make([]*invoice.Invoice, len(gormInvoices))
 	for i, m := range gormInvoices {
 		invoices[i] = r.toDomain(&m)
 	}
-	return invoices, nil
+
+	// Calculate total pages
+	totalPages := int(total) / params.PageSize
+	if int(total)%params.PageSize > 0 {
+		totalPages++
+	}
+
+	return &invoice.PaginatedResult{
+		Invoices:   invoices,
+		Total:      total,
+		Page:       params.Page,
+		PageSize:   params.PageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 
 func (r *InvoiceGormRepo) Update(ctx context.Context, inv *invoice.Invoice, updateFunc func(invoice2 *invoice.Invoice) error) error {
