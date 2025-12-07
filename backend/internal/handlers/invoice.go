@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"invoice-scan/backend/internal/domain/invoice"
 	domainstorage "invoice-scan/backend/internal/domain/storage"
@@ -277,6 +278,49 @@ func (h *InvoiceHandler) Delete(c *gin.Context) {
 		Data:    nil,
 	})
 }
+
+func (h *InvoiceHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id := invoice.ID(idStr)
+
+	var req UpdateInvoiceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	inv, err := h.repo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{
+			Success: false,
+			Error:   "Invoice not found",
+		})
+		return
+	}
+
+	if err := h.repo.Update(c.Request.Context(), inv, func(i *invoice.Invoice) error {
+		i.ExtractedData = req.ExtractedData
+		i.UpdatedAt = time.Now()
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to update invoice: " + err.Error(),
+		})
+		return
+	}
+
+	data := NewInvoiceData(inv, getImagePath(inv.ImagePath))
+
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Data:    data,
+	})
+}
+
 
 func getImagePath(fullPath string) string {
 	filename := filepath.Base(fullPath)

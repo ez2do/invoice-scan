@@ -81,6 +81,7 @@ func main() {
 		v1.POST("/invoices/upload", invoiceHandler.Upload)
 		v1.GET("/invoices", invoiceHandler.List)
 		v1.GET("/invoices/:id", invoiceHandler.GetByID)
+		v1.PUT("/invoices/:id", invoiceHandler.Update)
 		v1.DELETE("/invoices/:id", invoiceHandler.Delete)
 	}
 

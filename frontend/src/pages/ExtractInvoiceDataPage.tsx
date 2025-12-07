@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  ArrowLeft, 
-  Loader2, 
-  CheckCircle2, 
-  XCircle, 
-  Image, 
-  FileText, 
-  Table2, 
+import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Image,
+  FileText,
+  Table2,
   Calculator,
   Save,
   ChevronDown,
   Package,
   LayoutGrid,
-  List
+  List,
+  AlertTriangle
 } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { apiClient, getImageUrl } from '@/lib/api';
@@ -92,10 +93,9 @@ function LineItemCard({ row, headers, rowIndex, onCellChange }: LineItemCardProp
             )}
           </div>
         </div>
-        <ChevronDown 
-          className={`w-5 h-5 text-surface-400 shrink-0 transition-transform duration-200 ${
-            isExpanded ? 'rotate-180' : ''
-          }`} 
+        <ChevronDown
+          className={`w-5 h-5 text-surface-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+            }`}
         />
       </button>
 
@@ -127,15 +127,72 @@ function convertExtractedDataToInvoiceData(extractedData: ExtractedData): Invoic
   };
 }
 
+function convertInvoiceDataToExtractedData(invoiceData: InvoiceData): ExtractedData {
+  return {
+    key_value_pairs: invoiceData.keyValuePairs,
+    table: invoiceData.table || { headers: [], rows: [] },
+    summary: invoiceData.summary,
+    confidence: invoiceData.confidence,
+  };
+}
+
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  title: string;
+  message: string;
+}
+
+function ConfirmDialog({ isOpen, onConfirm, onCancel, title, message }: ConfirmDialogProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+      <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl max-w-sm w-full p-6 animate-scale-in">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-warning-100 dark:bg-warning-900/30 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-surface-900 dark:text-white">{title}</h3>
+        </div>
+        <p className="text-surface-600 dark:text-surface-400 mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 
+              text-surface-700 dark:text-surface-300 font-medium
+              hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-warning-500 text-white font-medium
+              hover:bg-warning-600 transition-colors"
+          >
+            Rời đi
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ExtractInvoiceDataPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const [tableViewMode, setTableViewMode] = useState<'card' | 'table'>('card');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const {
     currentImage,
     selectedInvoiceId,
     extractedData,
+    isDirty,
     setExtractedData,
+    resetDirty,
     updateKeyValue,
     updateTableCell,
     updateSummary
@@ -181,12 +238,61 @@ export default function ExtractInvoiceDataPage() {
     }
   }, [invoiceData, invoiceId, invoice?.id, setExtractedData]);
 
+  const updateMutation = useMutation({
+    mutationFn: async (data: ExtractedData) => {
+      if (!invoiceId) throw new Error('Invoice ID is required');
+      return apiClient.updateInvoice(invoiceId, data);
+    },
+    onSuccess: () => {
+      resetDirty();
+      setSaveError(null);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        navigate('/list-invoices');
+      }, 500);
+    },
+    onError: (error) => {
+      setSaveError(error instanceof Error ? error.message : 'Không thể lưu hóa đơn');
+      setSaveSuccess(false);
+    },
+  });
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   const handleBack = () => {
+    if (isDirty) {
+      setShowConfirmDialog(true);
+    } else {
+      navigate('/list-invoices');
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setShowConfirmDialog(false);
+    resetDirty();
     navigate('/list-invoices');
   };
 
+  const handleCancelLeave = () => {
+    setShowConfirmDialog(false);
+  };
+
   const handleComplete = () => {
-    navigate('/list-invoices');
+    if (!extractedData) return;
+    
+    const dataToSave = convertInvoiceDataToExtractedData(extractedData);
+    updateMutation.mutate(dataToSave);
   };
 
   if (!invoiceId) {
@@ -195,7 +301,7 @@ export default function ExtractInvoiceDataPage() {
   }
 
   const displayImage = getImageUrl(invoice?.image_path || currentImage);
-  const displayData = invoiceData || extractedData;
+  const displayData = extractedData || invoiceData;
 
   return (
     <div className="page-container">
@@ -330,11 +436,10 @@ export default function ExtractInvoiceDataPage() {
                         <button
                           type="button"
                           onClick={() => setTableViewMode('card')}
-                          className={`p-1.5 rounded-md transition-all duration-200 ${
-                            tableViewMode === 'card'
+                          className={`p-1.5 rounded-md transition-all duration-200 ${tableViewMode === 'card'
                               ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm'
                               : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
-                          }`}
+                            }`}
                           aria-label="Xem dạng thẻ"
                         >
                           <LayoutGrid className="w-4 h-4" />
@@ -342,11 +447,10 @@ export default function ExtractInvoiceDataPage() {
                         <button
                           type="button"
                           onClick={() => setTableViewMode('table')}
-                          className={`p-1.5 rounded-md transition-all duration-200 ${
-                            tableViewMode === 'table'
+                          className={`p-1.5 rounded-md transition-all duration-200 ${tableViewMode === 'table'
                               ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm'
                               : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
-                          }`}
+                            }`}
                           aria-label="Xem dạng bảng"
                         >
                           <List className="w-4 h-4" />
@@ -443,19 +547,54 @@ export default function ExtractInvoiceDataPage() {
                 )}
               </div>
 
-              <div className="shrink-0 p-4 border-t border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900">
+              <div className="shrink-0 p-4 border-t border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 space-y-3">
+                {saveError && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-error-50 dark:bg-error-500/10 text-error-700 dark:text-error-400 text-sm">
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    <span>{saveError}</span>
+                  </div>
+                )}
+                {saveSuccess && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-50 dark:bg-accent-500/10 text-accent-700 dark:text-accent-400 text-sm">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>Đã lưu thành công!</span>
+                  </div>
+                )}
                 <button
-                  className="btn-primary w-full h-12"
+                  className="btn-primary w-full h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleComplete}
+                  disabled={updateMutation.isPending || saveSuccess}
                 >
-                  <Save className="w-5 h-5" />
-                  <span>Lưu & Hoàn thành</span>
+                  {updateMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : saveSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Đã lưu!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      <span>Lưu & Hoàn thành</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+        title="Thay đổi chưa được lưu"
+        message="Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn rời đi không?"
+      />
     </div>
   );
 }

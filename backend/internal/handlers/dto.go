@@ -59,3 +59,8 @@ func NewInvoiceData(inv *invoice.Invoice, imageURL string) InvoiceData {
 
 	return data
 }
+
+type UpdateInvoiceRequest struct {
+	ExtractedData json.RawMessage `json:"extracted_data" binding:"required"`
+}
+

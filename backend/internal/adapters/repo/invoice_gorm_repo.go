@@ -111,7 +111,7 @@ func (r *InvoiceGormRepo) Update(ctx context.Context, inv *invoice.Invoice, upda
 	}
 
 	gormInv := r.toGorm(inv)
-	return db.Updates(&gormInv).Error
+	return db.WithContext(ctx).Model(&gormInv).Updates(&gormInv).Error
 }
 
 func (r *InvoiceGormRepo) Delete(ctx context.Context, id invoice.ID) error {

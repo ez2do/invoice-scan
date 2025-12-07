@@ -2,7 +2,8 @@ import type {
   ExtractResponse,
   UploadResponse,
   InvoiceResponse,
-  PaginatedInvoicesResponse
+  PaginatedInvoicesResponse,
+  ExtractedData
 } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3001/api/v1';
@@ -136,6 +137,30 @@ class APIClient {
       console.error('Delete Invoice Error:', error);
       throw new Error(
         error instanceof Error ? error.message : 'Failed to delete invoice'
+      );
+    }
+  }
+
+  async updateInvoice(id: string, extractedData: ExtractedData): Promise<InvoiceResponse> {
+    try {
+      const response = await fetch(`${this.baseURL}/invoices/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ extracted_data: extractedData }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Update Invoice Error:', error);
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to update invoice'
       );
     }
   }
